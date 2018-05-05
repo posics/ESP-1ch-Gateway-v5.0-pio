@@ -46,12 +46,13 @@
 
 
 #ifdef ESP32BUILD
-#include "esp_wifi.h"
-#include "WiFi.h"
+  #include "esp_wifi.h"
+  #include "WiFi.h"
 #else
-#include <ESP8266WiFi.h>
-#include <DNSServer.h> 							// Local DNSserver
+  #include <ESP8266WiFi.h>
+  #include <DNSServer.h> 							// Local DNSserver
 #endif
+
 #include "FS.h"
 #include <pins_arduino.h>
 #include <ArduinoJson.h>
@@ -102,7 +103,6 @@ using namespace std;
 
 
 #if OLED==1
-#include "SSD1306.h"
 SSD1306  display(OLED_ADDR, OLED_SDA, OLED_SCL);// i2c ADDR & SDA, SCL on wemos
 //SSD1306 ddisplay(0x3c, 21, 22);
 #endif
@@ -111,15 +111,15 @@ int debug=1;									// Debug level! 0 is no msgs, 1 normal, 2 extensive
 
 // You can switch webserver off if not necessary but probably better to leave it in.
 #if A_SERVER==1
-#ifdef ESP32BUILD
-#include <WiFiClient.h>
-#include <WebServer.h>
-#include <ESPmDNS.h>
-WebServer server(A_SERVERPORT);
-#else
-#include <Streaming.h>          				// http://arduiniana.org/libraries/streaming/
-  ESP8266WebServer server(A_SERVERPORT);
-#endif
+  #ifdef ESP32BUILD
+    #include <WiFiClient.h>
+    #include <WebServer.h>
+    #include <ESPmDNS.h>
+    WebServer server(A_SERVERPORT);
+  #else
+    #include <Streaming.h>          				// http://arduiniana.org/libraries/streaming/
+    ESP8266WebServer server(A_SERVERPORT);
+  #endif
 #endif
 
 byte currentMode = 0x81;
@@ -351,29 +351,29 @@ int WlanReadWpa() {
 	_hop = gwayConfig.hop;
 	gwayConfig.boots++;							// Every boot of the system we increase the reset
 
-#if GATEWAYNODE==1
-	if (gwayConfig.fcnt != (uint8_t) 0) frameCount = gwayConfig.fcnt+10;
-#endif
+  #if GATEWAYNODE==1
+  	if (gwayConfig.fcnt != (uint8_t) 0) frameCount = gwayConfig.fcnt+10;
+  #endif
 
-#if WIFIMANAGER > 0
-	String ssid=gwayConfig.ssid;
-	String pass=gwayConfig.pass;
+  #if WIFIMANAGER > 0
+  	String ssid=gwayConfig.ssid;
+  	String pass=gwayConfig.pass;
 
-	char ssidBuf[ssid.length()+1];
-	ssid.toCharArray(ssidBuf,ssid.length()+1);
-	char passBuf[pass.length()+1];
-	pass.toCharArray(passBuf,pass.length()+1);
-	Serial.print(F("WlanReadWpa: ")); Serial.print(ssidBuf); Serial.print(F(", ")); Serial.println(passBuf);
+  	char ssidBuf[ssid.length()+1];
+  	ssid.toCharArray(ssidBuf,ssid.length()+1);
+  	char passBuf[pass.length()+1];
+  	pass.toCharArray(passBuf,pass.length()+1);
+  	Serial.print(F("WlanReadWpa: ")); Serial.print(ssidBuf); Serial.print(F(", ")); Serial.println(passBuf);
 
-	strcpy(wpa[0].login, ssidBuf);				// XXX changed from wpa[0][0] = ssidBuf
-	strcpy(wpa[0].passw, passBuf);
+  	strcpy(wpa[0].login, ssidBuf);				// XXX changed from wpa[0][0] = ssidBuf
+  	strcpy(wpa[0].passw, passBuf);
 
-	Serial.print(F("WlanReadWpa: <"));
-	Serial.print(wpa[0].login); 				// XXX
-	Serial.print(F(">, <"));
-	Serial.print(wpa[0].passw);
-	Serial.println(F(">"));
-#endif
+  	Serial.print(F("WlanReadWpa: <"));
+  	Serial.print(wpa[0].login); 				// XXX
+  	Serial.print(F(">, <"));
+  	Serial.print(wpa[0].passw);
+  	Serial.println(F(">"));
+  #endif
 
 }
 
@@ -396,9 +396,9 @@ int WlanWriteWpa( char* ssid, char *pass) {
 	String p((char *) pass);
 	gwayConfig.pass = p;
 
-#if GATEWAYNODE==1
-	gwayConfig.fcnt = frameCount;
-#endif
+  #if GATEWAYNODE==1
+  	gwayConfig.fcnt = frameCount;
+  #endif
 	gwayConfig.ch = ifreq;
 	gwayConfig.sf = sf;
 	gwayConfig.cad = _cad;
@@ -425,9 +425,9 @@ int WlanWriteWpa( char* ssid, char *pass) {
 // ----------------------------------------------------------------------------
 int WlanConnect(int maxTry) {
 
-#if WIFIMANAGER==1
-	WiFiManager wifiManager;
-#endif
+  #if WIFIMANAGER==1
+  	WiFiManager wifiManager;
+  #endif
 
 	unsigned char agains = 0;
 	unsigned char wpa_index = (WIFIMANAGER >0 ? 0 : 1);		// Skip over first record for WiFiManager
@@ -480,37 +480,37 @@ int WlanConnect(int maxTry) {
 	  i++;													// Number of times we try to connect
 	}
 
-#if DUSB>=1
-	if (i>0) {
-		Serial.print(F("WLAN reconnected"));
-		Serial.println();
-	}
-#endif
+  #if DUSB>=1
+  	if (i>0) {
+  		Serial.print(F("WLAN reconnected"));
+  		Serial.println();
+  	}
+  #endif
 
 	// Still not connected?
 	if (WiFi.status() != WL_CONNECTED) {
-#if WIFIMANAGER==1
-		Serial.println(F("Starting Access Point Mode"));
-		Serial.print(F("Connect Wifi to accesspoint: "));
-		Serial.print(AP_NAME);
-		Serial.print(F(" and connect to IP: 192.168.4.1"));
-		Serial.println();
-		wifiManager.autoConnect(AP_NAME, AP_PASSWD );
-		//wifiManager.startConfigPortal(AP_NAME, AP_PASSWD );
-		// At this point, there IS a Wifi Access Point found and connected
-		// We must connect to the local SPIFFS storage to store the access point
-		//String s = WiFi.SSID();
-		//char ssidBuf[s.length()+1];
-		//s.toCharArray(ssidBuf,s.length()+1);
-		// Now look for the password
-		struct station_config sta_conf;
-		wifi_station_get_config(&sta_conf);
+  #if WIFIMANAGER==1
+  		Serial.println(F("Starting Access Point Mode"));
+  		Serial.print(F("Connect Wifi to accesspoint: "));
+  		Serial.print(AP_NAME);
+  		Serial.print(F(" and connect to IP: 192.168.4.1"));
+  		Serial.println();
+  		wifiManager.autoConnect(AP_NAME, AP_PASSWD );
+  		//wifiManager.startConfigPortal(AP_NAME, AP_PASSWD );
+  		// At this point, there IS a Wifi Access Point found and connected
+  		// We must connect to the local SPIFFS storage to store the access point
+  		//String s = WiFi.SSID();
+  		//char ssidBuf[s.length()+1];
+  		//s.toCharArray(ssidBuf,s.length()+1);
+  		// Now look for the password
+  		struct station_config sta_conf;
+  		wifi_station_get_config(&sta_conf);
 
-		//WlanWriteWpa(ssidBuf, (char *)sta_conf.password);
-		WlanWriteWpa((char *)sta_conf.ssid, (char *)sta_conf.password);
-#else
-		return(-1);
-#endif
+  		//WlanWriteWpa(ssidBuf, (char *)sta_conf.password);
+  		WlanWriteWpa((char *)sta_conf.ssid, (char *)sta_conf.password);
+  #else
+  		return(-1);
+  #endif
 	}
 
 	yield();
@@ -542,10 +542,10 @@ int readUdp(int packetSize)
 	uint8_t buff_down[RX_BUFF_SIZE];		// Buffer for downstream
 
 	if (WlanConnect(10) < 0) {
-#if DUSB>=1
-			Serial.print(F("readdUdp: ERROR connecting to WLAN"));
-			if (debug>=2) Serial.flush();
-#endif
+  #if DUSB>=1
+  			Serial.print(F("readdUdp: ERROR connecting to WLAN"));
+  			if (debug>=2) Serial.flush();
+  #endif
 			Udp.flush();
 			yield();
 			return(-1);
@@ -554,10 +554,10 @@ int readUdp(int packetSize)
 	yield();
 
 	if (packetSize > RX_BUFF_SIZE) {
-#if DUSB>=1
-		Serial.print(F("readUDP:: ERROR package of size: "));
-		Serial.println(packetSize);
-#endif
+  #if DUSB>=1
+  		Serial.print(F("readUDP:: ERROR package of size: "));
+  		Serial.println(packetSize);
+  #endif
 		Udp.flush();
 		return(-1);
 	}
@@ -565,10 +565,10 @@ int readUdp(int packetSize)
 	// We assume here that we know the originator of the message
 	// In practice however this can be any sender!
 	if (Udp.read(buff_down, packetSize) < packetSize) {
-#if DUSB>=1
-		Serial.println(F("readUsb:: Reading less chars"));
-		return(-1);
-#endif
+  #if DUSB>=1
+  		Serial.println(F("readUsb:: Reading less chars"));
+  		return(-1);
+  #endif
 	}
 
 	// Remote Address should be known
@@ -579,11 +579,11 @@ int readUdp(int packetSize)
 
 	if (remotePortNo == 123) {
 		// This is an NTP message arriving
-#if DUSB>=1
-		if (debug>0) {
-			Serial.println(F("readUdp:: NTP msg rcvd"));
-		}
-#endif
+  #if DUSB>=1
+  		if (debug>0) {
+  			Serial.println(F("readUdp:: NTP msg rcvd"));
+  		}
+  #endif
 		gwayConfig.ntpErr++;
 		gwayConfig.ntpErrTime = millis();
 		return(0);
@@ -603,55 +603,55 @@ int readUdp(int packetSize)
 		// server. As this function is used for downstream only, this option
 		// will never be selected but is included as a reference only
 		case PKT_PUSH_DATA: // 0x00 UP
-#if DUSB>=1
-			if (debug >=1) {
-				Serial.print(F("PKT_PUSH_DATA:: size ")); Serial.print(packetSize);
-				Serial.print(F(" From ")); Serial.print(remoteIpNo);
-				Serial.print(F(", port ")); Serial.print(remotePortNo);
-				Serial.print(F(", data: "));
-				for (int i=0; i<packetSize; i++) {
-					Serial.print(buff_down[i],HEX);
-					Serial.print(':');
-				}
-				Serial.println();
-				if (debug>=2) Serial.flush();
-			}
-#endif
+  #if DUSB>=1
+  			if (debug >=1) {
+  				Serial.print(F("PKT_PUSH_DATA:: size ")); Serial.print(packetSize);
+  				Serial.print(F(" From ")); Serial.print(remoteIpNo);
+  				Serial.print(F(", port ")); Serial.print(remotePortNo);
+  				Serial.print(F(", data: "));
+  				for (int i=0; i<packetSize; i++) {
+  					Serial.print(buff_down[i],HEX);
+  					Serial.print(':');
+  				}
+  				Serial.println();
+  				if (debug>=2) Serial.flush();
+  			}
+  #endif
 		break;
 
 		// This message is sent by the server to acknoledge receipt of a
 		// (sensor) message sent with the code above.
 		case PKT_PUSH_ACK:	// 0x01 DOWN
-#if DUSB>=1
-			if (debug >= 2) {
-				Serial.print(F("PKT_PUSH_ACK:: size "));
-				Serial.print(packetSize);
-				Serial.print(F(" From "));
-				Serial.print(remoteIpNo);
-				Serial.print(F(", port "));
-				Serial.print(remotePortNo);
-				Serial.print(F(", token: "));
-				Serial.println(token, HEX);
-				Serial.println();
-			}
-#endif
+  #if DUSB>=1
+  			if (debug >= 2) {
+  				Serial.print(F("PKT_PUSH_ACK:: size "));
+  				Serial.print(packetSize);
+  				Serial.print(F(" From "));
+  				Serial.print(remoteIpNo);
+  				Serial.print(F(", port "));
+  				Serial.print(remotePortNo);
+  				Serial.print(F(", token: "));
+  				Serial.println(token, HEX);
+  				Serial.println();
+  			}
+  #endif
 		break;
 
 		case PKT_PULL_DATA:	// 0x02 UP
-#if DUSB>=1
-			Serial.print(F(" Pull Data"));
-			Serial.println();
-#endif
+  #if DUSB>=1
+  			Serial.print(F(" Pull Data"));
+  			Serial.println();
+  #endif
 		break;
 
 		// This message type is used to confirm OTAA message to the node
 		// XXX This message format may also be used for other downstream communucation
 		case PKT_PULL_RESP:	// 0x03 DOWN
-#if DUSB>=1
-			if (debug>=0) {
-				Serial.println(F("PKT_PULL_RESP:: received"));
-			}
-#endif
+  #if DUSB>=1
+  			if (debug>=0) {
+  				Serial.println(F("PKT_PULL_RESP:: received"));
+  			}
+  #endif
 			lastTmst = micros();					// Store the tmst this package was received
 
 			// Send to the LoRa Node first (timing) and then do messaging
@@ -675,90 +675,90 @@ int readUdp(int packetSize)
 			buff[10]=MAC_array[4];
 			buff[11]=MAC_array[5];
 			buff[12]=0;
-#if DUSB>=1
-			Serial.println(F("readUdp:: TX buff filled"));
-#endif
+  #if DUSB>=1
+  			Serial.println(F("readUdp:: TX buff filled"));
+  #endif
 			// Only send the PKT_PULL_ACK to the UDP socket that just sent the data!!!
 			Udp.beginPacket(remoteIpNo, remotePortNo);
-#ifdef ESP32BUILD
-			if (Udp.write(buff, 12) != 12) {
-#else
+  #ifdef ESP32BUILD
+  			if (Udp.write(buff, 12) != 12) {
+  #else
       if (Udp.write((char *)buff, 12) != 12) {
-#endif
-#if DUSB>=1
-				if (debug>=0)
-					Serial.println("PKT_PULL_ACK:: Error UDP write");
-#endif
+  #endif
+  #if DUSB>=1
+  				if (debug>=0)
+  					Serial.println("PKT_PULL_ACK:: Error UDP write");
+  #endif
 			}
 			else {
-#if DUSB>=1
-				if (debug>=0) {
-					Serial.print(F("PKT_TX_ACK:: tmst="));
-					Serial.println(micros());
-				}
-#endif
+  #if DUSB>=1
+  				if (debug>=0) {
+  					Serial.print(F("PKT_TX_ACK:: tmst="));
+  					Serial.println(micros());
+  				}
+  #endif
 			}
 
 			if (!Udp.endPacket()) {
-#if DUSB>=1
-				if (debug>=0)
-					Serial.println(F("PKT_PULL_DATALL Error Udp.endpaket"));
-#endif
+  #if DUSB>=1
+  				if (debug>=0)
+  					Serial.println(F("PKT_PULL_DATALL Error Udp.endpaket"));
+  #endif
 			}
 
 			yield();
-#if DUSB>=1
-			if (debug >=1) {
-				Serial.print(F("PKT_PULL_RESP:: size "));
-				Serial.print(packetSize);
-				Serial.print(F(" From "));
-				Serial.print(remoteIpNo);
-				Serial.print(F(", port "));
-				Serial.print(remotePortNo);
-				Serial.print(F(", data: "));
-				data = buff_down + 4;
-				data[packetSize] = 0;
-				Serial.print((char *)data);
-				Serial.println(F("..."));
-			}
-#endif
+  #if DUSB>=1
+  			if (debug >=1) {
+  				Serial.print(F("PKT_PULL_RESP:: size "));
+  				Serial.print(packetSize);
+  				Serial.print(F(" From "));
+  				Serial.print(remoteIpNo);
+  				Serial.print(F(", port "));
+  				Serial.print(remotePortNo);
+  				Serial.print(F(", data: "));
+  				data = buff_down + 4;
+  				data[packetSize] = 0;
+  				Serial.print((char *)data);
+  				Serial.println(F("..."));
+  			}
+  #endif
 		break;
 
 		case PKT_PULL_ACK:	// 0x04 DOWN; the server sends a PULL_ACK to confirm PULL_DATA receipt
-#if DUSB>=1
-			if (debug >= 2) {
-				Serial.print(F("PKT_PULL_ACK:: size ")); Serial.print(packetSize);
-				Serial.print(F(" From ")); Serial.print(remoteIpNo);
-				Serial.print(F(", port ")); Serial.print(remotePortNo);
-				Serial.print(F(", data: "));
-				for (int i=0; i<packetSize; i++) {
-					Serial.print(buff_down[i],HEX);
-					Serial.print(':');
-				}
-				Serial.println();
-			}
-#endif
+  #if DUSB>=1
+  			if (debug >= 2) {
+  				Serial.print(F("PKT_PULL_ACK:: size ")); Serial.print(packetSize);
+  				Serial.print(F(" From ")); Serial.print(remoteIpNo);
+  				Serial.print(F(", port ")); Serial.print(remotePortNo);
+  				Serial.print(F(", data: "));
+  				for (int i=0; i<packetSize; i++) {
+  					Serial.print(buff_down[i],HEX);
+  					Serial.print(':');
+  				}
+  				Serial.println();
+  			}
+  #endif
 		break;
 
 		default:
-#if GATEWAYMGT==1
-			// For simplicity, we send the first 4 bytes too
-			gateway_mgt(packetSize, buff_down);
-#else
+  #if GATEWAYMGT==1
+  			// For simplicity, we send the first 4 bytes too
+  			gateway_mgt(packetSize, buff_down);
+  #else
 
-#endif
-#if DUSB>=1
-			Serial.print(F(", ERROR ident not recognized="));
-			Serial.println(ident);
-#endif
+  #endif
+  #if DUSB>=1
+  			Serial.print(F(", ERROR ident not recognized="));
+  			Serial.println(ident);
+  #endif
 		break;
 		}
-#if DUSB>=2
-		if (debug>=1) {
-			Serial.print(F("readUdp:: returning="));
-			Serial.println(packetSize);
-		}
-#endif
+  #if DUSB>=2
+  		if (debug>=1) {
+  			Serial.print(F("readUdp:: returning="));
+  			Serial.println(packetSize);
+  		}
+  #endif
 		// For downstream messages
 		return packetSize;
 	}
@@ -782,10 +782,10 @@ int sendUdp(IPAddress server, int port, uint8_t *msg, int length) {
 
 	// Check whether we are conected to Wifi and the internet
 	if (WlanConnect(3) < 0) {
-#if DUSB>=1
-		Serial.print(F("sendUdp: ERROR connecting to WiFi"));
-		Serial.flush();
-#endif
+  #if DUSB>=1
+  		Serial.print(F("sendUdp: ERROR connecting to WiFi"));
+  		Serial.flush();
+  #endif
 		Udp.flush();
 		yield();
 		return(0);
@@ -794,26 +794,26 @@ int sendUdp(IPAddress server, int port, uint8_t *msg, int length) {
 	yield();
 
 	//send the update
-#if DUSB>=1
-  if (debug>=2) Serial.println(F("WiFi connected"));
-#endif
+  #if DUSB>=1
+    if (debug>=2) Serial.println(F("WiFi connected"));
+  #endif
 	if (!Udp.beginPacket(server, (int) port)) {
-#if DUSB>=1
-		if (debug>=1) Serial.println(F("sendUdp:: Error Udp.beginPacket"));
-#endif
+  #if DUSB>=1
+  		if (debug>=1) Serial.println(F("sendUdp:: Error Udp.beginPacket"));
+  #endif
 		return(0);
 	}
 
 	yield();
 
-#ifdef ESP32BUILD
-	if (Udp.write(msg, length) != length) {
-#else
-  if (Udp.write((char *)msg, length) != length) {
-#endif
-#if DUSB>=1
-		Serial.println(F("sendUdp:: Error write"));
-#endif
+  #ifdef ESP32BUILD
+  	if (Udp.write(msg, length) != length) {
+  #else
+    if (Udp.write((char *)msg, length) != length) {
+  #endif
+  #if DUSB>=1
+  		Serial.println(F("sendUdp:: Error write"));
+  #endif
 		Udp.endPacket();						// Close UDP
 		return(0);								// Return error
 	}
@@ -821,12 +821,12 @@ int sendUdp(IPAddress server, int port, uint8_t *msg, int length) {
 	yield();
 
 	if (!Udp.endPacket()) {
-#if DUSB>=1
-		if (debug>=1) {
-			Serial.println(F("sendUdp:: Error Udp.endPacket"));
-			Serial.flush();
-		}
-#endif
+  #if DUSB>=1
+  		if (debug>=1) {
+  			Serial.println(F("sendUdp:: Error Udp.endPacket"));
+  			Serial.flush();
+  		}
+  #endif
 		return(0);
 	}
 	return(1);
@@ -844,30 +844,28 @@ bool UDPconnect() {
 
 	bool ret = false;
 	unsigned int localPort = _LOCUDPPORT;			// To listen to return messages from WiFi
-#if DUSB>=1
-	if (debug>=1) {
-		Serial.print(F("Local UDP port="));
-		Serial.println(localPort);
-	}
-#endif
+  #if DUSB>=1
+  	if (debug>=1) {
+  		Serial.print(F("Local UDP port="));
+  		Serial.println(localPort);
+  	}
+  #endif
 	if (Udp.begin(localPort) == 1) {
-#if DUSB>=1
-		if (debug>=1) Serial.println(F("Connection successful"));
-#endif
+  #if DUSB>=1
+  		if (debug>=1) Serial.println(F("Connection successful"));
+  #endif
 		ret = true;
 	}
 	else{
-#if DUSB>=1
-		if (debug>=1) Serial.println("Connection failed");
-#endif
+  #if DUSB>=1
+  		if (debug>=1) Serial.println("Connection failed");
+  #endif
 	}
 	return(ret);
 }//udpConnect
 
 // ============================================================================
 // NTP TIME functions
-
-
 
 // ----------------------------------------------------------------------------
 // Send the request packet to the NTP server.
@@ -1003,36 +1001,36 @@ void pullData() {
 
 	uint8_t *pullPtr;
 	pullPtr = pullDataReq,
-#ifdef _TTNSERVER
-    sendUdp(ttnServer, _TTNPORT, pullDataReq, pullIndex);
-	yield();
-#endif
+  #ifdef _TTNSERVER
+      sendUdp(ttnServer, _TTNPORT, pullDataReq, pullIndex);
+  	yield();
+  #endif
 
-#if DUSB>=1
-	if (pullPtr != pullDataReq) {
-		Serial.println(F("pullPtr != pullDatReq"));
-		Serial.flush();
-	}
+  #if DUSB>=1
+  	if (pullPtr != pullDataReq) {
+  		Serial.println(F("pullPtr != pullDatReq"));
+  		Serial.flush();
+  	}
 
-#endif
-#ifdef _THINGSERVER
-	sendUdp(thingServer, _THINGPORT, pullDataReq, pullIndex);
-#endif
+  #endif
+  #ifdef _THINGSERVER
+  	sendUdp(thingServer, _THINGPORT, pullDataReq, pullIndex);
+  #endif
 
-#if DUSB>=1
-    if (debug>= 2) {
-		yield();
-		Serial.print(F("PKT_PULL_DATA request, len=<"));
-		Serial.print(pullIndex);
-		Serial.print(F("> "));
-		for (i=0; i<pullIndex; i++) {
-			Serial.print(pullDataReq[i],HEX);				// DEBUG: display JSON stat
-			Serial.print(':');
-		}
-		Serial.println();
-		if (debug>=2) Serial.flush();
-	}
-#endif
+  #if DUSB>=1
+      if (debug>= 2) {
+  		yield();
+  		Serial.print(F("PKT_PULL_DATA request, len=<"));
+  		Serial.print(pullIndex);
+  		Serial.print(F("> "));
+  		for (i=0; i<pullIndex; i++) {
+  			Serial.print(pullDataReq[i],HEX);				// DEBUG: display JSON stat
+  			Serial.print(':');
+  		}
+  		Serial.println();
+  		if (debug>=2) Serial.flush();
+  	}
+  #endif
 	return;
 }//pullData
 
@@ -1045,77 +1043,77 @@ void pullData() {
 // ----------------------------------------------------------------------------
 void sendstat() {
 
-    uint8_t status_report[STATUS_SIZE]; 					// status report as a JSON object
-    char stat_timestamp[32];								// XXX was 24
-    time_t t;
-	char clat[10]={0};
-	char clon[10]={0};
+  uint8_t status_report[STATUS_SIZE]; 					// status report as a JSON object
+  char stat_timestamp[32];								// XXX was 24
+  time_t t;
+  char clat[10]={0};
+  char clon[10]={0};
 
-    int stat_index=0;
-	uint8_t token_h   = (uint8_t)rand(); 					// random token
-    uint8_t token_l   = (uint8_t)rand();					// random token
+  int stat_index=0;
+  uint8_t token_h   = (uint8_t)rand(); 					// random token
+  uint8_t token_l   = (uint8_t)rand();					// random token
 
-    // pre-fill the data buffer with fixed fields
-    status_report[0]  = PROTOCOL_VERSION;					// 0x01
-	status_report[1]  = token_h;
-    status_report[2]  = token_l;
-    status_report[3]  = PKT_PUSH_DATA;						// 0x00
+  // pre-fill the data buffer with fixed fields
+  status_report[0]  = PROTOCOL_VERSION;					// 0x01
+  status_report[1]  = token_h;
+  status_report[2]  = token_l;
+  status_report[3]  = PKT_PUSH_DATA;						// 0x00
 
-	// READ MAC ADDRESS OF ESP8266, and return unique Gateway ID consisting of MAC address and 2bytes 0xFF
-    status_report[4]  = MAC_array[0];
-    status_report[5]  = MAC_array[1];
-    status_report[6]  = MAC_array[2];
-    status_report[7]  = 0xFF;
-    status_report[8]  = 0xFF;
-    status_report[9]  = MAC_array[3];
-    status_report[10] = MAC_array[4];
-    status_report[11] = MAC_array[5];
+  // READ MAC ADDRESS OF ESP8266, and return unique Gateway ID consisting of MAC address and 2bytes 0xFF
+  status_report[4]  = MAC_array[0];
+  status_report[5]  = MAC_array[1];
+  status_report[6]  = MAC_array[2];
+  status_report[7]  = 0xFF;
+  status_report[8]  = 0xFF;
+  status_report[9]  = MAC_array[3];
+  status_report[10] = MAC_array[4];
+  status_report[11] = MAC_array[5];
 
-    stat_index = 12;										// 12-byte header
+  stat_index = 12;										// 12-byte header
 
-    t = now();												// get timestamp for statistics
+  t = now();												// get timestamp for statistics
 
-	// XXX Using CET as the current timezone. Change to your timezone
-	sprintf(stat_timestamp, "%04d-%02d-%02d %02d:%02d:%02d CET", year(),month(),day(),hour(),minute(),second());
-	yield();
+  // XXX Using CET as the current timezone. Change to your timezone
+  sprintf(stat_timestamp, "%04d-%02d-%02d %02d:%02d:%02d CET", year(),month(),day(),hour(),minute(),second());
+  yield();
 
-	ftoa(lat,clat,5);										// Convert lat to char array with 5 decimals
-	ftoa(lon,clon,5);										// As IDE CANNOT prints floats
+  ftoa(lat,clat,5);										// Convert lat to char array with 5 decimals
+  ftoa(lon,clon,5);										// As IDE CANNOT prints floats
 
-	// Build the Status message in JSON format, XXX Split this one up...
-	delay(1);
+  // Build the Status message in JSON format, XXX Split this one up...
+  delay(1);
 
-    int j = snprintf((char *)(status_report + stat_index), STATUS_SIZE-stat_index,
-		"{\"stat\":{\"time\":\"%s\",\"lati\":%s,\"long\":%s,\"alti\":%i,\"rxnb\":%u,\"rxok\":%u,\"rxfw\":%u,\"ackr\":%u.0,\"dwnb\":%u,\"txnb\":%u,\"pfrm\":\"%s\",\"mail\":\"%s\",\"desc\":\"%s\"}}",
-		stat_timestamp, clat, clon, (int)alt, cp_nb_rx_rcv, cp_nb_rx_ok, cp_up_pkt_fwd, 0, 0, 0, platform, email, description);
+  int j = snprintf((char *)(status_report + stat_index), STATUS_SIZE-stat_index,
+  "{\"stat\":{\"time\":\"%s\",\"lati\":%s,\"long\":%s,\"alti\":%i,\"rxnb\":%u,\"rxok\":%u,\"rxfw\":%u,\"ackr\":%u.0,\"dwnb\":%u,\"txnb\":%u,\"pfrm\":\"%s\",\"mail\":\"%s\",\"desc\":\"%s\"}}",
+  stat_timestamp, clat, clon, (int)alt, cp_nb_rx_rcv, cp_nb_rx_ok, cp_up_pkt_fwd, 0, 0, 0, platform, email, description);
 
-	yield();												// Give way to the internal housekeeping of the ESP8266
+  yield();												// Give way to the internal housekeeping of the ESP8266
 
-    stat_index += j;
-    status_report[stat_index] = 0; 							// add string terminator, for safety
+  stat_index += j;
+  status_report[stat_index] = 0; 							// add string terminator, for safety
 
-    if (debug>=2) {
-		Serial.print(F("stat update: <"));
-		Serial.print(stat_index);
-		Serial.print(F("> "));
-		Serial.println((char *)(status_report+12));			// DEBUG: display JSON stat
-	}
+  if (debug>=2) {
+    Serial.print(F("stat update: <"));
+    Serial.print(stat_index);
+    Serial.print(F("> "));
+    Serial.println((char *)(status_report+12));			// DEBUG: display JSON stat
+  }
 
-	if (stat_index > STATUS_SIZE) {
-		Serial.println(F("sendstat:: ERROR buffer too big"));
-		return;
-	}
+  if (stat_index > STATUS_SIZE) {
+    Serial.println(F("sendstat:: ERROR buffer too big"));
+    return;
+  }
 
-    //send the update
-#ifdef _TTNSERVER
-    sendUdp(ttnServer, _TTNPORT, status_report, stat_index);
-	yield();
-#endif
+  //send the update
+  #ifdef _TTNSERVER
+  sendUdp(ttnServer, _TTNPORT, status_report, stat_index);
+  yield();
+  #endif
 
-#ifdef _THINGSERVER
-	sendUdp(thingServer, _THINGPORT, status_report, stat_index);
-#endif
-	return;
+  #ifdef _THINGSERVER
+  sendUdp(thingServer, _THINGPORT, status_report, stat_index);
+  #endif
+  return;
 }//sendstat
 
 
@@ -1139,49 +1137,49 @@ void setup() {
 	delay(100);
 	Serial.flush();
 	delay(500);
-#if MUTEX_SPI==1
-	CreateMutux(&inSPI);
-#endif
-#if MUTEX_SPO==1
-	CreateMutux(&inSPO);
-#endif
-#if MUTEX_INT==1
-	CreateMutux(&inIntr);
-#endif
+  #if MUTEX_SPI==1
+  	CreateMutux(&inSPI);
+  #endif
+  #if MUTEX_SPO==1
+  	CreateMutux(&inSPO);
+  #endif
+  #if MUTEX_INT==1
+  	CreateMutux(&inIntr);
+  #endif
 	if (SPIFFS.begin()) Serial.println(F("SPIFFS loaded success"));
 
 	Serial.print(F("Assert="));
-#if defined CFG_noassert
-	Serial.println(F("No Asserts"));
-#else
-	Serial.println(F("Do Asserts"));
-#endif
+  #if defined CFG_noassert
+  	Serial.println(F("No Asserts"));
+  #else
+  	Serial.println(F("Do Asserts"));
+  #endif
 
-#if OLED==1
-	// Initialising the UI will init the display too.
-#ifdef ESP32BUILD
-  pinMode(16,OUTPUT);
-  digitalWrite(16, LOW);    // set GPIO16 low to reset OLED
-  delay(50);
-  digitalWrite(16, HIGH); // while OLED is running, must set GPIO16 in high、
-#endif
-  display.init();
-	display.flipScreenVertically();
-	display.setFont(ArialMT_Plain_24);
-	display.setTextAlignment(TEXT_ALIGN_LEFT);
-	display.drawString(0, 24, "STARTING");
-	display.display();
-#endif
+  #if OLED==1
+  	// Initialising the UI will init the display too.
+    #ifdef ESP32BUILD
+      pinMode(16,OUTPUT);
+      digitalWrite(16, LOW);    // set GPIO16 low to reset OLED
+      delay(50);
+      digitalWrite(16, HIGH); // while OLED is running, must set GPIO16 in high、
+    #endif
+    display.init();
+  	display.flipScreenVertically();
+  	display.setFont(ArialMT_Plain_24);
+  	display.setTextAlignment(TEXT_ALIGN_LEFT);
+  	display.drawString(0, 24, "STARTING");
+  	display.display();
+  #endif
 
 	delay(500);
 	yield();
-#if DUSB>=1
-	if (debug>=1) {
-		Serial.print(F("debug="));
-		Serial.println(debug);
-		yield();
-	}
-#endif
+  #if DUSB>=1
+  	if (debug>=1) {
+  		Serial.print(F("debug="));
+  		Serial.println(debug);
+  		yield();
+  	}
+  #endif
 	WiFi.mode(WIFI_STA);
 	WlanReadWpa();								// Read the last Wifi settings from SPIFFS into memory
 
@@ -1189,17 +1187,17 @@ void setup() {
 
 	// We start by connecting to a WiFi network, set hostname
 	char hostname[12];
-#ifdef ESP32BUILD
-  sprintf(hostname, "%s%02x%02x%02x", "esp32-", MAC_array[3], MAC_array[4], MAC_array[5]);
-#else
-	sprintf(hostname, "%s%02x%02x%02x", "esp8266-", MAC_array[3], MAC_array[4], MAC_array[5]);
-#endif
+  #ifdef ESP32BUILD
+    sprintf(hostname, "%s%02x%02x%02x", "esp32-", MAC_array[3], MAC_array[4], MAC_array[5]);
+  #else
+  	sprintf(hostname, "%s%02x%02x%02x", "esp8266-", MAC_array[3], MAC_array[4], MAC_array[5]);
+  #endif
 
-#ifdef ESP32BUILD
-  WiFi.setHostname(hostname);
-#else
-  wifi_station_set_hostname( hostname );
-#endif
+  #ifdef ESP32BUILD
+    WiFi.setHostname(hostname);
+  #else
+    wifi_station_set_hostname( hostname );
+  #endif
 
 	// Setup WiFi UDP connection. Give it some time and retry 50 times..
 	while (WlanConnect(50) < 0) {
@@ -1209,11 +1207,11 @@ void setup() {
 	}
 
 	Serial.print(F("Host "));
-#ifdef ESP32BUILD
-  Serial.print(WiFi.getHostname());
-#else
-  Serial.print(wifi_station_get_hostname());
-#endif
+  #ifdef ESP32BUILD
+    Serial.print(WiFi.getHostname());
+  #else
+    Serial.print(wifi_station_get_hostname());
+  #endif
 	Serial.print(F(" WiFi Connected to "));
 	Serial.print(WiFi.SSID());
 	Serial.println();
@@ -1243,11 +1241,11 @@ void setup() {
 	//pinMode(pins.dio2, INPUT);
 
 	// Init the SPI pins
-#ifdef ESP32BUILD
-  SPI.begin(SCK,MISO,MOSI,SS);
-#else
-	SPI.begin();
-#endif
+  #ifdef ESP32BUILD
+    SPI.begin(SCK,MISO,MOSI,SS);
+  #else
+  	SPI.begin();
+  #endif
 
 	delay(500);
 
@@ -1275,56 +1273,56 @@ void setup() {
 		die("Setup:: ERROR hostByName NTP");
 	};
 	delay(100);
-#ifdef _TTNSERVER
-	if (!WiFi.hostByName(_TTNSERVER, ttnServer))			// Use DNS to get server IP once
-	{
-		die("Setup:: ERROR hostByName TTN");
-	};
-	delay(100);
-#endif
-#ifdef _THINGSERVER
-	if (!WiFi.hostByName(_THINGSERVER, thingServer))
-	{
-		die("Setup:: ERROR hostByName THING");
-	}
-	delay(100);
-#endif
+  #ifdef _TTNSERVER
+  	if (!WiFi.hostByName(_TTNSERVER, ttnServer))			// Use DNS to get server IP once
+  	{
+  		die("Setup:: ERROR hostByName TTN");
+  	};
+  	delay(100);
+  #endif
+  #ifdef _THINGSERVER
+  	if (!WiFi.hostByName(_THINGSERVER, thingServer))
+  	{
+  		die("Setup:: ERROR hostByName THING");
+  	}
+  	delay(100);
+  #endif
 
 	// The Over the AIr updates are supported when we have a WiFi connection.
 	// The NTP time setting does not have to be precise for this function to work.
-#if A_OTA==1
-	setupOta(hostname);										// Uses wwwServer
-#endif
-
-	// Set the NTP Time
-#if NTP_INTR==1
-	setupTime();											// Set NTP time host and interval
-#else
-	//setTime((time_t)getNtpTime());
-	while (timeStatus() == timeNotSet) {
-		Serial.println(F("setupTime:: Time not set (yet)"));
-		delay(500);
-		time_t newTime;
-		newTime = (time_t)getNtpTime();
-		if (newTime != 0) setTime(newTime);
-	}
-	Serial.print("Time: "); printTime();
-	Serial.println();
-
-	//writeGwayCfg(&gwayConfig, CONFIGFILE, sf, WiFi.SSID(), debug );
-  #if GATEWAYNODE==1
-    writeGwayCfg(&gwayConfig, CONFIGFILE, sf, ifreq, debug, _cad, _hop, frameCount);
-  else
-    writeGwayCfg(&gwayConfig, CONFIGFILE, sf, ifreq, debug, _cad, _hop, 0);
+  #if A_OTA==1
+  	setupOta(hostname);										// Uses wwwServer
   #endif
 
-  Serial.println(F("Gateway configuration saved"));
-#endif
+	// Set the NTP Time
+  #if NTP_INTR==1
+  	setupTime();											// Set NTP time host and interval
+  #else
+  	//setTime((time_t)getNtpTime());
+  	while (timeStatus() == timeNotSet) {
+  		Serial.println(F("setupTime:: Time not set (yet)"));
+  		delay(500);
+  		time_t newTime;
+  		newTime = (time_t)getNtpTime();
+  		if (newTime != 0) setTime(newTime);
+  	}
+  	Serial.print("Time: "); printTime();
+  	Serial.println();
 
-#if A_SERVER==1
-	// Setup the webserver
-	setupWWW();
-#endif
+  	//writeGwayCfg(&gwayConfig, CONFIGFILE, sf, WiFi.SSID(), debug );
+    #if GATEWAYNODE==1
+      writeGwayCfg(&gwayConfig, CONFIGFILE, sf, ifreq, debug, _cad, _hop, frameCount);
+    else
+      writeGwayCfg(&gwayConfig, CONFIGFILE, sf, ifreq, debug, _cad, _hop, 0);
+    #endif
+
+    Serial.println(F("Gateway configuration saved"));
+  #endif
+
+  #if A_SERVER==1
+  	// Setup the webserver
+  	setupWWW();
+  #endif
 
 	delay(100);												// Wait after setup
 
@@ -1359,13 +1357,13 @@ void setup() {
 	writeConfig( CONFIGFILE, &gwayConfig);					// Write config
 
 	// activate OLED display
-#if OLED==1
-	// Initialising the UI will init the display too.
-	display.clear();
-	display.setFont(ArialMT_Plain_24);
-	display.drawString(0, 24, "READY");
-	display.display();
-#endif
+  #if OLED==1
+  	// Initialising the UI will init the display too.
+  	display.clear();
+  	display.setFont(ArialMT_Plain_24);
+  	display.drawString(0, 24, "READY");
+  	display.display();
+  #endif
 
 	Serial.println(F("--------------------------------------"));
 }//setup
@@ -1410,9 +1408,9 @@ void loop ()
 	// For the moment we use msgTime
 	if ( (((nowTime - statr[0].tmst) / 1000000) > _MSG_INTERVAL ) &&
 		(msgTime < statr[0].tmst)) {
-#if DUSB>=1
-		Serial.print('r');
-#endif
+  #if DUSB>=1
+  		Serial.print('r');
+  #endif
 		initLoraModem();
 		if (_cad) {
 			_state = S_SCAN;
@@ -1427,30 +1425,30 @@ void loop ()
 		msgTime = nowTime;
 	}
 
-#if A_OTA==1
-	// Perform Over the Air (OTA) update if enabled and requested by user.
-	// It is important to put this function at the start of loop() as it is
-	// not called frequently but it should always run when called.
-	//
-	yield();
-	ArduinoOTA.handle();
-#endif
+  #if A_OTA==1
+  	// Perform Over the Air (OTA) update if enabled and requested by user.
+  	// It is important to put this function at the start of loop() as it is
+  	// not called frequently but it should always run when called.
+  	//
+  	yield();
+  	ArduinoOTA.handle();
+  #endif
 
-#if A_SERVER==1
-	// Handle the WiFi server part of this sketch. Mainly used for administration
-	// and monitoring of the node. This function is important so it is called at the
-	// start of the loop() function
-	yield();
-	server.handleClient();
-#endif
+  #if A_SERVER==1
+  	// Handle the WiFi server part of this sketch. Mainly used for administration
+  	// and monitoring of the node. This function is important so it is called at the
+  	// start of the loop() function
+  	yield();
+  	server.handleClient();
+  #endif
 
 
 	// If we are not connected, try to connect.
 	// We will not read Udp in this loop cycle then
 	if (WlanConnect(1) < 0) {
-#if DUSB>=1
-			Serial.print(F("loop: ERROR reconnect WLAN"));
-#endif
+  #if DUSB>=1
+  			Serial.print(F("loop: ERROR reconnect WLAN"));
+  #endif
 			yield();
 			return;										// Exit loop if no WLAN connected
 	}
@@ -1463,15 +1461,15 @@ void loop ()
 	//
 	else {
 		while( (packetSize = Udp.parsePacket()) > 0) {		// Length of UDP message waiting
-#if DUSB>=2
-			Serial.println(F("loop:: readUdp calling"));
-#endif
+  #if DUSB>=2
+  			Serial.println(F("loop:: readUdp calling"));
+  #endif
 			// Packet may be PKT_PUSH_ACK (0x01), PKT_PULL_ACK (0x03) or PKT_PULL_RESP (0x04)
 			// This command is found in byte 4 (buffer[3])
 			if (readUdp(packetSize) <= 0) {
-#if DUSB>=1
-				if (debug>0) Serial.println(F("readUDP error"));
-#endif
+  #if DUSB>=1
+  				if (debug>0) Serial.println(F("readUDP error"));
+  #endif
 				break;
 			}
 			// Now we know we succesfull received message from host
@@ -1493,9 +1491,9 @@ void loop ()
 	if ((_hop) && (((long)(nowTime - hopTime)) > 7500)) {
 
 		if ((_state == S_SCAN) && (sf==SF12)) {
-#if DUSB>=1
-			if (debug>=1) Serial.println(F("loop:: hop"));
-#endif
+  #if DUSB>=1
+  			if (debug>=1) Serial.println(F("loop:: hop"));
+  #endif
 			hop();
 		}
 
@@ -1525,38 +1523,38 @@ void loop ()
 	//
 
     if ((nowSeconds - stattime) >= _STAT_INTERVAL) {	// Wake up every xx seconds
-#if DUSB>=1
-		if (debug>=2) {
-			Serial.print(F("STAT <"));
-			Serial.flush();
-		}
-#endif
+  #if DUSB>=1
+  		if (debug>=2) {
+  			Serial.print(F("STAT <"));
+  			Serial.flush();
+  		}
+  #endif
         sendstat();										// Show the status message and send to server
-#if DUSB>=1
-		if (debug>=2) {
-			Serial.println(F(">"));
-			if (debug>=2) Serial.flush();
-		}
-#endif
+  #if DUSB>=1
+  		if (debug>=2) {
+  			Serial.println(F(">"));
+  			if (debug>=2) Serial.flush();
+  		}
+  #endif
 
 		// If the gateway behaves like a node, we do from time to time
 		// send a node message to the backend server.
 		// The Gateway nod emessage has nothing to do with the STAT_INTERVAL
 		// message but we schedule it in the same frequency.
 		//
-#if GATEWAYNODE==1
-		if (gwayConfig.isNode) {
-			// Give way to internal Admin if necessary
-			yield();
+  #if GATEWAYNODE==1
+  		if (gwayConfig.isNode) {
+  			// Give way to internal Admin if necessary
+  			yield();
 
-			// If the 1ch gateway is a sensor itself, send the sensor values
-			// could be battery but also other status info or sensor info
+  			// If the 1ch gateway is a sensor itself, send the sensor values
+  			// could be battery but also other status info or sensor info
 
-			if (sensorPacket() < 0) {
-				Serial.println(F("sensorPacket: Error"));
-			}
-		}
-#endif
+  			if (sensorPacket() < 0) {
+  				Serial.println(F("sensorPacket: Error"));
+  			}
+  		}
+  #endif
 		stattime = nowSeconds;
     }
 
@@ -1567,12 +1565,12 @@ void loop ()
 	//
 	nowSeconds = (uint32_t) millis() /1000;
     if ((nowSeconds - pulltime) >= _PULL_INTERVAL) {	// Wake up every xx seconds
-#if DUSB>=1
-		if (debug>=1) {
-			Serial.print(F("PULL <"));
-			if (debug>=2) Serial.flush();
-		}
-#endif
+  #if DUSB>=1
+  		if (debug>=1) {
+  			Serial.print(F("PULL <"));
+  			if (debug>=2) Serial.flush();
+  		}
+  #endif
         pullData();										// Send PULL_DATA message to server
 		initLoraModem();
 		if (_cad) {
@@ -1585,12 +1583,12 @@ void loop ()
 		}
 		writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) 0x00);
 		writeRegister(REG_IRQ_FLAGS, 0xFF);				// Reset all interrupt flags
-#if DUSB>=1
-		if (debug>=1) {
-			Serial.println(F(">"));
-			if (debug>=2) Serial.flush();
-		}
-#endif
+  #if DUSB>=1
+  		if (debug>=1) {
+  			Serial.println(F(">"));
+  			if (debug>=2) Serial.flush();
+  		}
+  #endif
 		pulltime = nowSeconds;
     }
 
@@ -1598,17 +1596,17 @@ void loop ()
 	// If we do our own NTP handling (advisable)
 	// We do not use the timer interrupt but use the timing
 	// of the loop() itself which is better for SPI
-#if NTP_INTR==0
-	// Set the time in a manual way. Do not use setSyncProvider
-	// as this function may collide with SPI and other interrupts
-	yield();
-	nowSeconds = (uint32_t) millis() /1000;
-	if (nowSeconds - ntptimer >= _NTP_INTERVAL) {
-		yield();
-		time_t newTime;
-		newTime = (time_t)getNtpTime();
-		if (newTime != 0) setTime(newTime);
-		ntptimer = nowSeconds;
-	}
-#endif
+  #if NTP_INTR==0
+  	// Set the time in a manual way. Do not use setSyncProvider
+  	// as this function may collide with SPI and other interrupts
+  	yield();
+  	nowSeconds = (uint32_t) millis() /1000;
+  	if (nowSeconds - ntptimer >= _NTP_INTERVAL) {
+  		yield();
+  		time_t newTime;
+  		newTime = (time_t)getNtpTime();
+  		if (newTime != 0) setTime(newTime);
+  		ntptimer = nowSeconds;
+  	}
+  #endif
 }
