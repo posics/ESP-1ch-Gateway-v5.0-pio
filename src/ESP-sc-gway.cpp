@@ -1237,7 +1237,7 @@ void setup() {
 	pinMode(pins.rst, OUTPUT);
   pinMode(pins.dio0, INPUT);								// This pin is interrupt
 	pinMode(pins.dio1, INPUT);								// This pin is interrupt
-	//pinMode(pins.dio2, INPUT);
+	pinMode(pins.dio2, INPUT);
 
 	// Init the SPI pins
   #ifdef ESP32BUILD

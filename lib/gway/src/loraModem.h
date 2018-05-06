@@ -88,22 +88,37 @@ typedef struct {
 extern pins_t pins;
 
 #if _PIN_OUT==1
+	#define DI00		15	// GPIO15 / D8. For the Hallard board shared between DIO0/DIO1/DIO2
+	#define DI01		15	// GPIO15 / D8. Used for CAD, may or not be shared with DIO0
+	#define DI02		15	// GPIO15 / D8. Used for frequency hopping, don't care
+	#define SS			16	// GPIO16 / D0. Select pin connected to GPIO16 / D0
+	#define RST			0		// GPIO0 / D3. Reset pin not used
+											// MISO 12 / D6
+											// MOSI 13 / D7
+											// CLK  14 / D5
 #elif _PIN_OUT==2
+	#define DI00		5		// GPIO5 / D1. Dio0 used for one frequency and one SF
+	#define DI01		4		// GPIO4 / D2. Used for CAD, may or not be shared with DIO0
+	#define DI02		0		// GPIO0 / D3. Used for frequency hopping, don't care
+	#define SS			15	// GPIO15 / D8. Select pin connected to GPIO15
+	#define RST			0		// GPIO0 / D3. Reset pin not used
 #elif _PIN_OUT==3
-// For ComResult gateway PCB use the following settings
-#define SCK     5    // GPIO5  -- SX127x's SCK
-#define MISO    19   // GPIO19 -- SX127x's MISO
-#define MOSI    27   // GPIO27 -- SX127x's MOSI
-#define SS      18   // GPIO18 -- SX127x's CS
-#define RST     14   // GPIO14 -- SX127x's RESET
-#define DI00    26   // GPIO26 -- SX127x's IRQ(Interrupt Request)
+	// For ComResult gateway PCB use the following settings
+	#define SCK     5    // GPIO5  -- SX127x's SCK
+	#define MISO    19   // GPIO19 -- SX127x's MISO
+	#define MOSI    27   // GPIO27 -- SX127x's MOSI
+	#define SS      18   // GPIO18 -- SX127x's CS
+	#define RST     14   // GPIO14 -- SX127x's RESET
+	#define DI00    26   // GPIO26 -- SX127x's IRQ(Interrupt Request)
+	#define DI01		33   // GPIO4 / D2. Used for CAD, may or not be shared with DIO0
+	#define DI02		32   // GPIO0 / D3. Used for frequency hopping, don't care
 #else
-	// Use your own pin definitions, and uncomment #error line below
-	// MISO 12 / D6
-	// MOSI 13 / D7
-	// CLK  14 / D5
-	// SS   16 / D0
-#error "Pin Definitions _PIN_OUT must be 1(HALLARD) or 2 (COMRESULT)"
+		// Use your own pin definitions, and uncomment #error line below
+		// MISO 12 / D6
+		// MOSI 13 / D7
+		// CLK  14 / D5
+		// SS   16 / D0
+	#error "Pin Definitions _PIN_OUT must be 1(HALLARD) or 2 (COMRESULT)"
 #endif
 
 // STATR contains the statictis that are kept by message.

@@ -124,7 +124,7 @@ extern uint32_t ntptimer;
 // NOTE: If your node has only one frequency enabled and one SF, you must set this to 1
 //		in order to receive downlink messages
 // NOTE: In all other cases, value 0 works for most gateways with CAD enabled
-#define _STRICT_1CH	1
+#define _STRICT_1CH	0
 
 // Allows configuration through WifiManager AP setup. Must be 0 or 1
 #ifdef ESP32BUILD
