@@ -39,7 +39,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <cstdlib>
-#include <sys/time.h>
 #include <cstring>
 #include <TimeLib.h>							// http://playground.arduino.cc/code/time
 

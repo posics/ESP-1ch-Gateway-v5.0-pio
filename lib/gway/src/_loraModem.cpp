@@ -688,868 +688,867 @@ void loraWait(uint32_t tmst)
 // ----------------------------------------------------------------------------
 
 void txLoraModem(uint8_t *payLoad, uint8_t payLength, uint32_t tmst, uint8_t sfTx,
-	uint8_t powe, uint32_t freq, uint8_t crc, uint8_t iiq)
-	{
-		#if DUSB>=2
-		if (debug>=1) {
-			// Make sure that all serial stuff is done before continuing
-			Serial.print(F("txLoraModem::"));
-			Serial.print(F("  powe: ")); Serial.print(powe);
-			Serial.print(F(", freq: ")); Serial.print(freq);
-			Serial.print(F(", crc: ")); Serial.print(crc);
-			Serial.print(F(", iiq: 0X")); Serial.print(iiq,HEX);
-			Serial.println();
-			if (debug>=2) Serial.flush();
-		}
-		#endif
-		_state = S_TX;
+	uint8_t powe, uint32_t freq, uint8_t crc, uint8_t iiq) {
+	#if DUSB>=2
+	if (debug>=1) {
+		// Make sure that all serial stuff is done before continuing
+		Serial.print(F("txLoraModem::"));
+		Serial.print(F("  powe: ")); Serial.print(powe);
+		Serial.print(F(", freq: ")); Serial.print(freq);
+		Serial.print(F(", crc: ")); Serial.print(crc);
+		Serial.print(F(", iiq: 0X")); Serial.print(iiq,HEX);
+		Serial.println();
+		if (debug>=2) Serial.flush();
+	}
+	#endif
+	_state = S_TX;
 
-		// 1. Select LoRa modem from sleep mode
-		//opmode(OPMODE_LORA);									// set register 0x01 to 0x80
+	// 1. Select LoRa modem from sleep mode
+	//opmode(OPMODE_LORA);									// set register 0x01 to 0x80
 
-		// Assert the value of the current mode
-		ASSERT((readRegister(REG_OPMODE) & OPMODE_LORA) != 0);
+	// Assert the value of the current mode
+	ASSERT((readRegister(REG_OPMODE) & OPMODE_LORA) != 0);
 
-		// 2. enter standby mode (required for FIFO loading))
-		opmode(OPMODE_STANDBY);									// set 0x01 to 0x01
+	// 2. enter standby mode (required for FIFO loading))
+	opmode(OPMODE_STANDBY);									// set 0x01 to 0x01
 
-		// 3. Init spreading factor and other Modem setting
-		setRate(sfTx, crc);
+	// 3. Init spreading factor and other Modem setting
+	setRate(sfTx, crc);
 
-		// Frquency hopping
-		//writeRegister(REG_HOP_PERIOD, (uint8_t) 0x00);		// set 0x24 to 0x00 only for receivers
+	// Frquency hopping
+	//writeRegister(REG_HOP_PERIOD, (uint8_t) 0x00);		// set 0x24 to 0x00 only for receivers
 
-		// 4. Init Frequency, config channel
-		setFreq(freq);
+	// 4. Init Frequency, config channel
+	setFreq(freq);
 
-		// 6. Set power level, REG_PAC
-		setPow(powe);
+	// 6. Set power level, REG_PAC
+	setPow(powe);
 
-		// 7. prevent node to node communication
-		writeRegister(REG_INVERTIQ, (uint8_t) iiq);						// 0x33, (0x27 or 0x40)
+	// 7. prevent node to node communication
+	writeRegister(REG_INVERTIQ, (uint8_t) iiq);						// 0x33, (0x27 or 0x40)
 
-		// 8. set the IRQ mapping DIO0=TxDone DIO1=NOP DIO2=NOP (or lesss for 1ch gateway)
-		writeRegister(REG_DIO_MAPPING_1, (uint8_t)(MAP_DIO0_LORA_TXDONE|MAP_DIO1_LORA_NOP|MAP_DIO2_LORA_NOP));
+	// 8. set the IRQ mapping DIO0=TxDone DIO1=NOP DIO2=NOP (or lesss for 1ch gateway)
+	writeRegister(REG_DIO_MAPPING_1, (uint8_t)(MAP_DIO0_LORA_TXDONE|MAP_DIO1_LORA_NOP|MAP_DIO2_LORA_NOP));
 
-		// 9. clear all radio IRQ flags
-		writeRegister(REG_IRQ_FLAGS, (uint8_t) 0xFF);
+	// 9. clear all radio IRQ flags
+	writeRegister(REG_IRQ_FLAGS, (uint8_t) 0xFF);
 
-		// 10. mask all IRQs but TxDone
-		writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) ~IRQ_LORA_TXDONE_MASK);
+	// 10. mask all IRQs but TxDone
+	writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) ~IRQ_LORA_TXDONE_MASK);
 
-		// txLora
-		opmode(OPMODE_FSTX);									// set 0x01 to 0x02 (actual value becomes 0x82)
+	// txLora
+	opmode(OPMODE_FSTX);									// set 0x01 to 0x02 (actual value becomes 0x82)
 
-		// 11, 12, 13, 14. write the buffer to the FiFo
-		sendPkt(payLoad, payLength);
+	// 11, 12, 13, 14. write the buffer to the FiFo
+	sendPkt(payLoad, payLength);
 
-		// 15. wait extra delay out. The delayMicroseconds timer is accurate until 16383 uSec.
-		loraWait(tmst);
+	// 15. wait extra delay out. The delayMicroseconds timer is accurate until 16383 uSec.
+	loraWait(tmst);
 
-		//Set the base addres of the transmit buffer in FIFO
-		writeRegister(REG_FIFO_ADDR_PTR, (uint8_t) readRegister(REG_FIFO_TX_BASE_AD));	// set 0x0D to 0x0F (contains 0x80);
+	//Set the base addres of the transmit buffer in FIFO
+	writeRegister(REG_FIFO_ADDR_PTR, (uint8_t) readRegister(REG_FIFO_TX_BASE_AD));	// set 0x0D to 0x0F (contains 0x80);
 
-		//For TX we have to set the PAYLOAD_LENGTH
-		writeRegister(REG_PAYLOAD_LENGTH, (uint8_t) payLength);		// set 0x22, max 0x40==64Byte long
+	//For TX we have to set the PAYLOAD_LENGTH
+	writeRegister(REG_PAYLOAD_LENGTH, (uint8_t) payLength);		// set 0x22, max 0x40==64Byte long
 
-		//For TX we have to set the MAX_PAYLOAD_LENGTH
-		writeRegister(REG_MAX_PAYLOAD_LENGTH, (uint8_t) MAX_PAYLOAD_LENGTH);	// set 0x22, max 0x40==64Byte long
+	//For TX we have to set the MAX_PAYLOAD_LENGTH
+	writeRegister(REG_MAX_PAYLOAD_LENGTH, (uint8_t) MAX_PAYLOAD_LENGTH);	// set 0x22, max 0x40==64Byte long
 
-		// Reset the IRQ register
-		//writeRegister(REG_IRQ_FLAGS, 0xFF);						// set 0x12 to 0xFF
-		writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) 0x00);			// Clear the mask
-		writeRegister(REG_IRQ_FLAGS, (uint8_t) IRQ_LORA_TXDONE_MASK);// set 0x12 to 0x08
+	// Reset the IRQ register
+	//writeRegister(REG_IRQ_FLAGS, 0xFF);						// set 0x12 to 0xFF
+	writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) 0x00);			// Clear the mask
+	writeRegister(REG_IRQ_FLAGS, (uint8_t) IRQ_LORA_TXDONE_MASK);// set 0x12 to 0x08
 
-		// 16. Initiate actual transmission of FiFo
-		opmode(OPMODE_TX);											// set 0x01 to 0x03 (actual value becomes 0x83)
+	// 16. Initiate actual transmission of FiFo
+	opmode(OPMODE_TX);											// set 0x01 to 0x03 (actual value becomes 0x83)
 
-	}// txLoraModem
-
-
-	// ----------------------------------------------------------------------------
-	// Setup the LoRa receiver on the connected transceiver.
-	// - Determine the correct transceiver type (sx1272/RFM92 or sx1276/RFM95)
-	// - Set the frequency to listen to (1-channel remember)
-	// - Set Spreading Factor (standard SF7)
-	// The reset RST pin might not be necessary for at least the RGM95 transceiver
-	//
-	// 1. Put the radio in LoRa mode
-	// 2. Put modem in sleep or in standby
-	// 3. Set Frequency
-	// 4. Spreading Factor
-	// 5. Set interrupt mask
-	// 6. Clear all interrupt flags
-	// 7. Set opmode to OPMODE_RX
-	// 8. Set _state to S_RX
-	// 9. Reset all interrupts
-	// ----------------------------------------------------------------------------
-
-	void rxLoraModem()
-	{
-		// 1. Put system in LoRa mode
-		//opmode(OPMODE_LORA);
-
-		// 2. Put the radio in sleep mode
-		opmode(OPMODE_STANDBY);
-		//opmode(OPMODE_SLEEP);										// set 0x01 to 0x00
-
-		// 3. Set frequency based on value in freq
-		setFreq(freqs[ifreq]);										// set to 868.1MHz
-
-		// 4. Set spreading Factor and CRC
-		setRate(sf, 0x04);
-
-		// prevent node to node communication
-		writeRegister(REG_INVERTIQ, (uint8_t) 0x27);				// 0x33, 0x27; to reset from TX
-
-		// Max Payload length is dependent on 256 byte buffer.
-		// At startup TX starts at 0x80 and RX at 0x00. RX therefore maximized at 128 Bytes
-		//For TX we have to set the PAYLOAD_LENGTH
-		//writeRegister(REG_PAYLOAD_LENGTH, (uint8_t) PAYLOAD_LENGTH);	// set 0x22, 0x40==64Byte long
-
-		// Set CRC Protection or MAX payload protection
-		//writeRegister(REG_MAX_PAYLOAD_LENGTH, (uint8_t) MAX_PAYLOAD_LENGTH);	// set 0x23 to 0x80==128
-
-		//Set the start address for the FiFO (Which should be 0)
-		writeRegister(REG_FIFO_ADDR_PTR, (uint8_t) readRegister(REG_FIFO_RX_BASE_AD));	// set 0x0D to 0x0F (contains 0x00);
-
-		// Low Noise Amplifier used in receiver
-		writeRegister(REG_LNA, (uint8_t) LNA_MAX_GAIN);  						// 0x0C, 0x23
-
-		// Accept no interrupts except RXDONE, RXTOUT en RXCRC
-		writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) ~(IRQ_LORA_RXDONE_MASK | IRQ_LORA_RXTOUT_MASK | IRQ_LORA_CRCERR_MASK));
-
-		// set frequency hopping
-		if (_hop) {
-			#if DUSB>=1
-			if (debug >= 1) {
-				Serial.print(F("rxLoraModem:: Hop, channel="));
-				Serial.println(ifreq);
-			}
-			#endif
-			writeRegister(REG_HOP_PERIOD, 0x01);					// 0x24, 0x01 was 0xFF
-			// Set RXDONE interrupt to dio0
-			writeRegister(REG_DIO_MAPPING_1, (uint8_t)(MAP_DIO0_LORA_RXDONE | MAP_DIO1_LORA_RXTOUT | MAP_DIO1_LORA_FCC));
-		}
-		else {
-			writeRegister(REG_HOP_PERIOD,0x00);						// 0x24, 0x00 was 0xFF
-			// Set RXDONE interrupt to dio0
-			writeRegister(REG_DIO_MAPPING_1, (uint8_t)(MAP_DIO0_LORA_RXDONE | MAP_DIO1_LORA_RXTOUT));
-		}
+}// txLoraModem
 
 
-		// Set the opmode to either single or continuous receive. The first is used when
-		// every message can come on a different SF, the second when we have fixed SF
-		if (_cad) {
-			// cad Scanner setup, set _state to S_RX
-			// Set Single Receive Mode, goes in STANDBY mode after receipt
-			_state = S_RX;
-			opmode(OPMODE_RX_SINGLE);								// 0x80 | 0x06 (listen one message)
-		}
-		else {
-			// Set Continous Receive Mode, usefull if we stay on one SF
-			_state= S_RX;
-			opmode(OPMODE_RX);										// 0x80 | 0x05 (listen)
-		}
+// ----------------------------------------------------------------------------
+// Setup the LoRa receiver on the connected transceiver.
+// - Determine the correct transceiver type (sx1272/RFM92 or sx1276/RFM95)
+// - Set the frequency to listen to (1-channel remember)
+// - Set Spreading Factor (standard SF7)
+// The reset RST pin might not be necessary for at least the RGM95 transceiver
+//
+// 1. Put the radio in LoRa mode
+// 2. Put modem in sleep or in standby
+// 3. Set Frequency
+// 4. Spreading Factor
+// 5. Set interrupt mask
+// 6. Clear all interrupt flags
+// 7. Set opmode to OPMODE_RX
+// 8. Set _state to S_RX
+// 9. Reset all interrupts
+// ----------------------------------------------------------------------------
 
-		// 9. clear all radio IRQ flags
-		writeRegister(REG_IRQ_FLAGS, 0xFF);
+void rxLoraModem()
+{
+	// 1. Put system in LoRa mode
+	//opmode(OPMODE_LORA);
 
-		return;
-	}// rxLoraModem
+	// 2. Put the radio in sleep mode
+	opmode(OPMODE_STANDBY);
+	//opmode(OPMODE_SLEEP);										// set 0x01 to 0x00
 
+	// 3. Set frequency based on value in freq
+	setFreq(freqs[ifreq]);										// set to 868.1MHz
 
-	// ----------------------------------------------------------------------------
-	// function cadScanner()
-	//
-	// CAD Scanner will scan on the given channel for a valid Symbol/Preamble signal.
-	// So instead of receiving continuous on a given channel/sf combination
-	// we will wait on the given channel and scan for a preamble. Once received
-	// we will set the radio to the SF with best rssi (indicating reception on that sf).
-	// The function sets the _state to S_SCAN
-	// NOTE: DO not set the frequency here but use the frequency hopper
-	// ----------------------------------------------------------------------------
-	void cadScanner()
-	{
-		// 1. Put system in LoRa mode (which destroys all other nodes(
-		//opmode(OPMODE_LORA);
+	// 4. Set spreading Factor and CRC
+	setRate(sf, 0x04);
 
-		// 2. Put the radio in sleep mode
-		opmode(OPMODE_STANDBY);										// Was old value
-		//opmode(OPMODE_SLEEP);										// set 0x01 to 0x00
+	// prevent node to node communication
+	writeRegister(REG_INVERTIQ, (uint8_t) 0x27);				// 0x33, 0x27; to reset from TX
 
-		// As we can come back from S_TX with other frequencies and SF
-		// reset both to good values for cadScanner
+	// Max Payload length is dependent on 256 byte buffer.
+	// At startup TX starts at 0x80 and RX at 0x00. RX therefore maximized at 128 Bytes
+	//For TX we have to set the PAYLOAD_LENGTH
+	//writeRegister(REG_PAYLOAD_LENGTH, (uint8_t) PAYLOAD_LENGTH);	// set 0x22, 0x40==64Byte long
 
-		// 3. Set frequency based on value in freq					// XXX New, might be needed when receiving down
-		#if DUSB>=2
-		if ((debug>=1) && (ifreq>9)) {
-			Serial.print(F("cadScanner:: E Freq="));
+	// Set CRC Protection or MAX payload protection
+	//writeRegister(REG_MAX_PAYLOAD_LENGTH, (uint8_t) MAX_PAYLOAD_LENGTH);	// set 0x23 to 0x80==128
+
+	//Set the start address for the FiFO (Which should be 0)
+	writeRegister(REG_FIFO_ADDR_PTR, (uint8_t) readRegister(REG_FIFO_RX_BASE_AD));	// set 0x0D to 0x0F (contains 0x00);
+
+	// Low Noise Amplifier used in receiver
+	writeRegister(REG_LNA, (uint8_t) LNA_MAX_GAIN);  						// 0x0C, 0x23
+
+	// Accept no interrupts except RXDONE, RXTOUT en RXCRC
+	writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) ~(IRQ_LORA_RXDONE_MASK | IRQ_LORA_RXTOUT_MASK | IRQ_LORA_CRCERR_MASK));
+
+	// set frequency hopping
+	if (_hop) {
+		#if DUSB>=1
+		if (debug >= 1) {
+			Serial.print(F("rxLoraModem:: Hop, channel="));
 			Serial.println(ifreq);
+		}
+		#endif
+		writeRegister(REG_HOP_PERIOD, 0x01);					// 0x24, 0x01 was 0xFF
+		// Set RXDONE interrupt to dio0
+		writeRegister(REG_DIO_MAPPING_1, (uint8_t)(MAP_DIO0_LORA_RXDONE | MAP_DIO1_LORA_RXTOUT | MAP_DIO1_LORA_FCC));
+	}
+	else {
+		writeRegister(REG_HOP_PERIOD,0x00);						// 0x24, 0x00 was 0xFF
+		// Set RXDONE interrupt to dio0
+		writeRegister(REG_DIO_MAPPING_1, (uint8_t)(MAP_DIO0_LORA_RXDONE | MAP_DIO1_LORA_RXTOUT));
+	}
+
+
+	// Set the opmode to either single or continuous receive. The first is used when
+	// every message can come on a different SF, the second when we have fixed SF
+	if (_cad) {
+		// cad Scanner setup, set _state to S_RX
+		// Set Single Receive Mode, goes in STANDBY mode after receipt
+		_state = S_RX;
+		opmode(OPMODE_RX_SINGLE);								// 0x80 | 0x06 (listen one message)
+	}
+	else {
+		// Set Continous Receive Mode, usefull if we stay on one SF
+		_state= S_RX;
+		opmode(OPMODE_RX);										// 0x80 | 0x05 (listen)
+	}
+
+	// 9. clear all radio IRQ flags
+	writeRegister(REG_IRQ_FLAGS, 0xFF);
+
+	return;
+}// rxLoraModem
+
+
+// ----------------------------------------------------------------------------
+// function cadScanner()
+//
+// CAD Scanner will scan on the given channel for a valid Symbol/Preamble signal.
+// So instead of receiving continuous on a given channel/sf combination
+// we will wait on the given channel and scan for a preamble. Once received
+// we will set the radio to the SF with best rssi (indicating reception on that sf).
+// The function sets the _state to S_SCAN
+// NOTE: DO not set the frequency here but use the frequency hopper
+// ----------------------------------------------------------------------------
+void cadScanner()
+{
+	// 1. Put system in LoRa mode (which destroys all other nodes(
+	//opmode(OPMODE_LORA);
+
+	// 2. Put the radio in sleep mode
+	opmode(OPMODE_STANDBY);										// Was old value
+	//opmode(OPMODE_SLEEP);										// set 0x01 to 0x00
+
+	// As we can come back from S_TX with other frequencies and SF
+	// reset both to good values for cadScanner
+
+	// 3. Set frequency based on value in freq					// XXX New, might be needed when receiving down
+	#if DUSB>=2
+	if ((debug>=1) && (ifreq>9)) {
+		Serial.print(F("cadScanner:: E Freq="));
+		Serial.println(ifreq);
+		if (debug>=2) Serial.flush();
+		ifreq=0;
+	}
+	#endif
+	setFreq(freqs[ifreq]);
+
+	// For every time we stat the scanner, we set the SF to the begin value
+	sf = SF7;													// we make SF the lower, this is faster!
+
+	// 4. Set spreading Factor and CRC
+	setRate(sf, 0x04);
+
+	// listen to LORA_MAC_PREAMBLE
+	writeRegister(REG_SYNC_WORD, (uint8_t) 0x34);				// set reg 0x39 to 0x34
+
+	// Set the interrupts we want top listen to
+	writeRegister(REG_DIO_MAPPING_1, (uint8_t)(MAP_DIO0_LORA_CADDONE | MAP_DIO1_LORA_CADDETECT | MAP_DIO2_LORA_NOP | MAP_DIO3_LORA_NOP));
+
+	// Set the mask for interrupts (we do not want to listen to) except for
+	writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) ~(IRQ_LORA_CDDONE_MASK | IRQ_LORA_CDDETD_MASK | IRQ_LORA_CRCERR_MASK));
+
+	// Set the opMode to CAD
+	opmode(OPMODE_CAD);
+
+	// Clear all relevant interrupts
+	//writeRegister(REG_IRQ_FLAGS, (uint8_t) 0xFF );						// May work better, clear ALL interrupts
+
+	// If we are here. we either might have set the SF or we have a timeout in which
+	// case the receive is started just as normal.
+	return;
+}// cadScanner
+
+
+// ----------------------------------------------------------------------------
+// First time initialisation of the LoRa modem
+// Subsequent changes to the modem state etc. done by txLoraModem or rxLoraModem
+// After initialisation the modem is put in rx mode (listen)
+// ----------------------------------------------------------------------------
+void initLoraModem()
+{
+	_state = S_INIT;
+	// Reset the transceiver chip with a pulse of 10 mSec
+	#ifdef ESP32BUILD
+	digitalWrite(pins.rst, LOW);
+	delayMicroseconds(10000);
+	digitalWrite(pins.rst, HIGH);
+	delayMicroseconds(10000);
+	#else
+	digitalWrite(pins.rst, HIGH);
+	delayMicroseconds(10000);
+	digitalWrite(pins.rst, LOW);
+	delayMicroseconds(10000);
+	#endif
+	digitalWrite(pins.ss, HIGH);
+
+	// Check chip version first
+	uint8_t version = readRegister(REG_VERSION);        // Read the LoRa chip version id
+	if (version == 0x22) {
+		// sx1272
+		#if DUSB>=2
+		Serial.println(F("WARNING:: SX1272 detected"));
+		#endif
+		sx1272 = true;
+	}
+	else if (version == 0x12) {
+		// sx1276?
+		#if DUSB>=2
+		if (debug >=1)
+		Serial.println(F("SX1276 starting"));
+		#endif
+		sx1272 = false;
+	}
+	else {
+		#if DUSB>=2
+		Serial.print(F("Unknown transceiver="));
+		Serial.println(version,HEX);
+		#endif
+		die("");
+	}
+
+	// 2. Set radio to sleep
+	opmode(OPMODE_SLEEP);										// set register 0x01 to 0x00
+
+	// 1 Set LoRa Mode
+	opmode(OPMODE_LORA);										// set register 0x01 to 0x80
+
+	// 3. Set frequency based on value in freq
+	ifreq = 0;
+	freq=freqs[0];
+	setFreq(freq);												// set to 868.1MHz
+
+	// 4. Set spreading Factor
+	setRate(sf, 0x04);
+
+	// Low Noise Amplifier used in receiver
+	writeRegister(REG_LNA, (uint8_t) LNA_MAX_GAIN);  						// 0x0C, 0x23
+
+	// 7. set sync word
+	writeRegister(REG_SYNC_WORD, (uint8_t) 0x34);				// set 0x39 to 0x34 LORA_MAC_PREAMBLE
+
+	// prevent node to node communication
+	writeRegister(REG_INVERTIQ,0x27);							// 0x33, 0x27; to reset from TX
+
+	// Max Payload length is dependent on 256 byte buffer. At startup TX starts at
+	// 0x80 and RX at 0x00. RX therefore maximized at 128 Bytes
+	writeRegister(REG_MAX_PAYLOAD_LENGTH,MAX_PAYLOAD_LENGTH);	// set 0x23 to 0x80==128 bytes
+	writeRegister(REG_PAYLOAD_LENGTH,PAYLOAD_LENGTH);			// 0x22, 0x40==64Byte long
+
+	writeRegister(REG_FIFO_ADDR_PTR, readRegister(REG_FIFO_RX_BASE_AD));	// set reg 0x0D to 0x0F
+	writeRegister(REG_HOP_PERIOD,0x00);							// reg 0x24, set to 0x00 was 0xFF
+	if (_hop) {
+		writeRegister(REG_HOP_CHANNEL,0x00);					// reg 0x1C, set to 0x00
+	}
+
+	// 5. Config PA Ramp up time								// set reg 0x0A
+	writeRegister(REG_PARAMP, (readRegister(REG_PARAMP) & 0xF0) | 0x08); // set PA ramp-up time 50 uSec
+
+	// Set 0x4D PADAC for SX1276 ; XXX register is 0x5a for sx1272
+	writeRegister(REG_PADAC_SX1276,  0x84); 					// set 0x4D (PADAC) to 0x84
+	//writeRegister(REG_PADAC, readRegister(REG_PADAC)|0x4);
+
+	// Reset interrupt Mask, enable all interrupts
+	writeRegister(REG_IRQ_FLAGS_MASK, 0x00);
+
+	// 9. clear all radio IRQ flags
+	writeRegister(REG_IRQ_FLAGS, 0xFF);
+}// initLoraModem
+
+
+
+// ----------------------------------------------------------------------------
+// stateMachine handler of the state machine.
+// We use ONE state machine for all kind of interrupts. This assures that we take
+// the correct action upon receiving an interrupt.
+//
+// STATE MACHINE
+// The program uses the following state machine (in _state), all states
+// are done in interrupt routine, only the follow-up of S-RXDONE is done
+// in the main loop() program. This is because otherwise the interrupt processing
+// would take too long to finish
+//
+// S-INIT=0, 	The commands in this state are executed only once
+//	- Goto S_SCAN
+//
+// S-SCAN, 		CadScanner() part
+//	- Upon CDDECT (int1) goto S_RX,
+//	- upon CDDONE (int0) got S_CAD, walk through all SF until CDDETD
+//	- Else stay in SCAN state
+//
+// S-CAD,
+//	- Upon CDDECT (int1) goto S_RX,
+//	- Upon CDDONE (int0) goto S_SCAN, start with SF7 recognition again
+//
+// S-RX, 		Received CDDECT so message detected, RX cycle started.
+//	- Upon RXDONE (int0) package read. If read ok continue,
+//	- upon RXTOUT (int1) goto S_SCAN
+//
+// S-RXDONE Buffer reading is complete
+//	- Wait for reading in loop()
+//	- Upon message send to server goto S_SCAN
+//
+// S-TX			Transmitting a message
+//	- Upon TX goto S_SCAN
+//
+// S-TXDONE		Transmission complete by loop() now again in interrupt
+//	- Set the Mask
+//	- reset the Flags
+//	- Goto either SCAN or RX
+//
+// This interrupt routine has been kept as simple and short as possible.
+// If we receive an interrupt that does not below to a _state then print error.
+//
+// NOTE: We may clear the interrupt but leave the flag for the moment.
+//	The eventHandler should take care of repairing flags between interrupts.
+// ----------------------------------------------------------------------------
+
+void stateMachine()
+{
+	// Make a sort of mutex by using a volatile variable
+	#if MUTEX_INT==1
+	if(!GetMutex(&inIntr)) {
+		#if DUSB>=1
+		if (debug>=0) {
+			Serial.println(F("eInt:: Mutex"));
 			if (debug>=2) Serial.flush();
-			ifreq=0;
 		}
 		#endif
-		setFreq(freqs[ifreq]);
-
-		// For every time we stat the scanner, we set the SF to the begin value
-		sf = SF7;													// we make SF the lower, this is faster!
-
-		// 4. Set spreading Factor and CRC
-		setRate(sf, 0x04);
-
-		// listen to LORA_MAC_PREAMBLE
-		writeRegister(REG_SYNC_WORD, (uint8_t) 0x34);				// set reg 0x39 to 0x34
-
-		// Set the interrupts we want top listen to
-		writeRegister(REG_DIO_MAPPING_1, (uint8_t)(MAP_DIO0_LORA_CADDONE | MAP_DIO1_LORA_CADDETECT | MAP_DIO2_LORA_NOP | MAP_DIO3_LORA_NOP));
-
-		// Set the mask for interrupts (we do not want to listen to) except for
-		writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) ~(IRQ_LORA_CDDONE_MASK | IRQ_LORA_CDDETD_MASK | IRQ_LORA_CRCERR_MASK));
-
-		// Set the opMode to CAD
-		opmode(OPMODE_CAD);
-
-		// Clear all relevant interrupts
-		//writeRegister(REG_IRQ_FLAGS, (uint8_t) 0xFF );						// May work better, clear ALL interrupts
-
-		// If we are here. we either might have set the SF or we have a timeout in which
-		// case the receive is started just as normal.
 		return;
-	}// cadScanner
+	}
+	#endif
+	// Determine what interrupt flags are set
+	uint8_t flags = readRegister(REG_IRQ_FLAGS);
+	uint8_t mask  = readRegister(REG_IRQ_FLAGS_MASK);
+	uint8_t intr  = flags & ( ~ mask );				// Only react on non masked interrupts
+	uint8_t rssi;
 
-
-	// ----------------------------------------------------------------------------
-	// First time initialisation of the LoRa modem
-	// Subsequent changes to the modem state etc. done by txLoraModem or rxLoraModem
-	// After initialisation the modem is put in rx mode (listen)
-	// ----------------------------------------------------------------------------
-	void initLoraModem()
-	{
-		_state = S_INIT;
-		// Reset the transceiver chip with a pulse of 10 mSec
-		#ifdef ESP32BUILD
-		digitalWrite(pins.rst, LOW);
-		delayMicroseconds(10000);
-		digitalWrite(pins.rst, HIGH);
-		delayMicroseconds(10000);
-		#else
-		digitalWrite(pins.rst, HIGH);
-		delayMicroseconds(10000);
-		digitalWrite(pins.rst, LOW);
-		delayMicroseconds(10000);
+	if (intr == 0x00) {
+		#if DUSB>=1
+		// Something strange has happened: There has been an event
+		// and we do not have a value for interrupt.
+		if (debug>=1) Serial.println(F("stateMachine:: NO intr"));
 		#endif
-		digitalWrite(pins.ss, HIGH);
 
-		// Check chip version first
-		uint8_t version = readRegister(REG_VERSION);        // Read the LoRa chip version id
-		if (version == 0x22) {
-			// sx1272
-			#if DUSB>=2
-			Serial.println(F("WARNING:: SX1272 detected"));
-			#endif
-			sx1272 = true;
+		// Mayby wait a little before resetting all/
+		#if MUTEX_INT==1
+		ReleaseMutex(&inIntr);
+		#endif
+		//_state = S_SCAN;
+		writeRegister(REG_IRQ_FLAGS, 0xFF );		// Clear ALL interrupts
+		_event = 0;
+		return;
+	}
+
+	// Small state machine inside the interrupt handler
+	// as next actions are depending on the state we are in.
+	switch (_state)
+	{
+
+		// --------------------------------------------------------------
+		// If the state is init, we are starting up.
+		// The initLoraModem() function is already called ini setup();
+		case S_INIT:
+		#if DUSB>=2
+		if (debug >= 1) {
+			Serial.println(F("S_INIT"));
 		}
-		else if (version == 0x12) {
-			// sx1276?
+		#endif
+		// new state, needed to startup the radio (to S_SCAN)
+		writeRegister(REG_IRQ_FLAGS, 0xFF );		// Clear ALL interrupts
+		break;
+
+
+		// --------------------------------------------------------------
+		// In S_SCAN we measure a high RSSI this means that there (probably) is a message
+		// coming in at that freq. But not necessarily on the current SF.
+		// If so find the right SF with CDDETD.
+		case S_SCAN:
+		//
+		// Intr=IRQ_LORA_CDDETD_MASK
+		// We detected a message on this frequency and SF when scanning
+		// We clear both CDDETD and CDDONE and swich to reading state
+		//
+		if (intr & IRQ_LORA_CDDETD_MASK) {
 			#if DUSB>=2
-			if (debug >=1)
-			Serial.println(F("SX1276 starting"));
+			if (debug >=3) {
+				Serial.println(F("SCAN:: CADDETD, "));
+			}
 			#endif
-			sx1272 = false;
+
+			_state = S_RX;								// Set state to receiving
+			opmode(OPMODE_RX_SINGLE);					// set reg 0x01 to 0x06
+
+			// Set RXDONE interrupt to dio0, RXTOUT to dio1
+			writeRegister(REG_DIO_MAPPING_1, (MAP_DIO0_LORA_RXDONE | MAP_DIO1_LORA_RXTOUT));
+
+			// Since new state is S_RX, accept no interrupts except RXDONE or RXTOUT
+			writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) ~(IRQ_LORA_RXDONE_MASK | IRQ_LORA_RXTOUT_MASK));
+
+			delayMicroseconds( RSSI_WAIT_DOWN );		// Wait some microseconds less
+			// Starting with version 5.0.1 the waittime is dependent on the SF
+			// So for SF12 we wait longer (2^7 == 128 uSec) and for SF7 4 uSec.
+			//delayMicroseconds( (0x01 << ((uint8_t)sf - 5 )) );
+			rssi = readRegister(REG_RSSI);				// Read the RSSI
+			_rssi = rssi;								// Read the RSSI in the state variable
+
+			writeRegister(REG_IRQ_FLAGS, 0xFF );		// reset all interrupt flags
+		}//if
+
+		// CDDONE
+		// We received a CDDONE int telling us that we received a message on this
+		// frequency and possibly on one of its SF.
+		// If so, we switch to CAD state where we will only listen to CDDETD event.
+		//
+		else if (intr & IRQ_LORA_CDDONE_MASK) {
+
+			opmode(OPMODE_CAD);
+
+			rssi = readRegister(REG_RSSI);				// Read the RSSI
+
+			// We choose the generic RSSI as a sorting mechanism for packages/messages
+			// The pRSSI (package RSSI) is caluclated upon successful reception of message
+			// So we expect tht this value makes little sense for the moment with CDDONE.
+			// Set the rssi as low as the noise floor. Lower values are not recognized then.
+			//
+			if ( rssi > RSSI_LIMIT ) {					// Is set to 37 (27/08/2017)
+				_state = S_CAD;							// XXX invoke the interrupt handler again?
+			}
+
+			// Clear the CADDONE flag
+			//writeRegister(REG_IRQ_FLAGS, IRQ_LORA_CDDONE_MASK);
+			writeRegister(REG_IRQ_FLAGS, 0xFF);
 		}
+
+		// If not CDDETC and not CDDONE and sf==12 we have to hop
+		else if ((_hop) && (sf==12)) {
+			hop();
+			sf=(sf_t)7;
+		}
+
+		// If we do not switch to S_CAD, we have to hop
+		// Instead of waiting for an interrupt we do this on timer basis (more regular).
+		else {
+			_state=S_SCAN;
+			cadScanner();
+			writeRegister(REG_IRQ_FLAGS, 0xFF);
+		}
+		// else keep on scanning
+		break; // S_SCAN
+
+
+		// --------------------------------------------------------------
+		// S_CAD: In CAD mode we scan every SF for high RSSI until we have a DETECT.
+		// Reason is the we received a CADDONE interrupt so we know a message is received
+		// on the frequency but may be on another SF.
+		//
+		// If message is of the right frequency and SF, IRQ_LORA_CDDETD_MSAK interrupt
+		// is raised, indicating that we can start beging reading the message from SPI.
+		//
+		// DIO0 interrupt IRQ_LORA_CDDONE_MASK in state S_CAD==2 means that we might have
+		// a lock on the Freq but not the right SF. So we increase the SF
+		//
+		case S_CAD:
+
+		// Intr=IRQ_LORA_CDDETD_MASK
+		// We have to set the sf based on a strong RSSI for this channel
+		//
+		if (intr & IRQ_LORA_CDDETD_MASK) {
+
+			_state = S_RX;								// Set state to start receiving
+			opmode(OPMODE_RX_SINGLE);					// set reg 0x01 to 0x06, initiate READ
+
+			// Set RXDONE interrupt to dio0, RXTOUT to dio1
+			writeRegister(REG_DIO_MAPPING_1, (MAP_DIO0_LORA_RXDONE | MAP_DIO1_LORA_RXTOUT));
+
+			// Accept no interrupts except RXDONE or RXTOUT
+			writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) ~(IRQ_LORA_RXDONE_MASK | IRQ_LORA_RXTOUT_MASK));
+
+			delayMicroseconds( RSSI_WAIT_DOWN );		// Wait some microseconds less
+			//delayMicroseconds( (0x01 << ((uint8_t)sf - 5 )) );
+			rssi = readRegister(REG_RSSI);				// Read the RSSI
+			_rssi = rssi;								// Read the RSSI in the state variable
+
+			//writeRegister(REG_IRQ_FLAGS, IRQ_LORA_CDDETD_MASK | IRQ_LORA_RXDONE_MASK);
+			writeRegister(REG_IRQ_FLAGS, 0xFF );		// reset all CAD Detect interrupt flags
+		}// CDDETD
+
+		// Intr == CADDONE
+		// So we scan this SF and if not high enough ... next
+		//
+		else if (intr & IRQ_LORA_CDDONE_MASK) {
+			// If this is not SF12, increment the SF and try again
+			// We expect on other SF get CDDETD
+			//
+			if (((uint8_t)sf) < SF12) {
+				sf = (sf_t)((uint8_t)sf+1);				// XXX This would mean SF7 never used
+				setRate(sf, 0x04);						// Set SF with CRC==on
+
+				opmode(OPMODE_CAD);						// Scanning mode
+
+				delayMicroseconds(RSSI_WAIT );
+				rssi = readRegister(REG_RSSI);			// Read the RSSI
+
+				// reset interrupt flags for CAD Done
+				writeRegister(REG_IRQ_FLAGS, IRQ_LORA_CDDONE_MASK | IRQ_LORA_CDDETD_MASK);
+				//writeRegister(REG_IRQ_FLAGS, 0xFF );	// XXX this will prevent the CDDETD from being read
+
+			}
+			// If we reach SF12, we should go back to SCAN state
+			else {
+				if (_hop) { hop(); }					// if HOP we start at the next frequency
+				_state = S_SCAN;
+				cadScanner();							// Which will reset SF to SF7
+				// Reset the interrupts
+				writeRegister(REG_IRQ_FLAGS, IRQ_LORA_CDDONE_MASK);
+			}
+		} //CADDONE
+
+		//
+		// if this interrupt is not CDECT or CDDONE then the interrupt is
+		// is unknown in this state. So we clear interrupt and give a warning.
 		else {
 			#if DUSB>=2
-			Serial.print(F("Unknown transceiver="));
-			Serial.println(version,HEX);
-			#endif
-			die("");
-		}
-
-		// 2. Set radio to sleep
-		opmode(OPMODE_SLEEP);										// set register 0x01 to 0x00
-
-		// 1 Set LoRa Mode
-		opmode(OPMODE_LORA);										// set register 0x01 to 0x80
-
-		// 3. Set frequency based on value in freq
-		ifreq = 0;
-		freq=freqs[0];
-		setFreq(freq);												// set to 868.1MHz
-
-		// 4. Set spreading Factor
-		setRate(sf, 0x04);
-
-		// Low Noise Amplifier used in receiver
-		writeRegister(REG_LNA, (uint8_t) LNA_MAX_GAIN);  						// 0x0C, 0x23
-
-		// 7. set sync word
-		writeRegister(REG_SYNC_WORD, (uint8_t) 0x34);				// set 0x39 to 0x34 LORA_MAC_PREAMBLE
-
-		// prevent node to node communication
-		writeRegister(REG_INVERTIQ,0x27);							// 0x33, 0x27; to reset from TX
-
-		// Max Payload length is dependent on 256 byte buffer. At startup TX starts at
-		// 0x80 and RX at 0x00. RX therefore maximized at 128 Bytes
-		writeRegister(REG_MAX_PAYLOAD_LENGTH,MAX_PAYLOAD_LENGTH);	// set 0x23 to 0x80==128 bytes
-		writeRegister(REG_PAYLOAD_LENGTH,PAYLOAD_LENGTH);			// 0x22, 0x40==64Byte long
-
-		writeRegister(REG_FIFO_ADDR_PTR, readRegister(REG_FIFO_RX_BASE_AD));	// set reg 0x0D to 0x0F
-		writeRegister(REG_HOP_PERIOD,0x00);							// reg 0x24, set to 0x00 was 0xFF
-		if (_hop) {
-			writeRegister(REG_HOP_CHANNEL,0x00);					// reg 0x1C, set to 0x00
-		}
-
-		// 5. Config PA Ramp up time								// set reg 0x0A
-		writeRegister(REG_PARAMP, (readRegister(REG_PARAMP) & 0xF0) | 0x08); // set PA ramp-up time 50 uSec
-
-		// Set 0x4D PADAC for SX1276 ; XXX register is 0x5a for sx1272
-		writeRegister(REG_PADAC_SX1276,  0x84); 					// set 0x4D (PADAC) to 0x84
-		//writeRegister(REG_PADAC, readRegister(REG_PADAC)|0x4);
-
-		// Reset interrupt Mask, enable all interrupts
-		writeRegister(REG_IRQ_FLAGS_MASK, 0x00);
-
-		// 9. clear all radio IRQ flags
-		writeRegister(REG_IRQ_FLAGS, 0xFF);
-	}// initLoraModem
-
-
-
-		// ----------------------------------------------------------------------------
-		// stateMachine handler of the state machine.
-		// We use ONE state machine for all kind of interrupts. This assures that we take
-		// the correct action upon receiving an interrupt.
-		//
-		// STATE MACHINE
-		// The program uses the following state machine (in _state), all states
-		// are done in interrupt routine, only the follow-up of S-RXDONE is done
-		// in the main loop() program. This is because otherwise the interrupt processing
-		// would take too long to finish
-		//
-		// S-INIT=0, 	The commands in this state are executed only once
-		//	- Goto S_SCAN
-		//
-		// S-SCAN, 		CadScanner() part
-		//	- Upon CDDECT (int1) goto S_RX,
-		//	- upon CDDONE (int0) got S_CAD, walk through all SF until CDDETD
-		//	- Else stay in SCAN state
-		//
-		// S-CAD,
-		//	- Upon CDDECT (int1) goto S_RX,
-		//	- Upon CDDONE (int0) goto S_SCAN, start with SF7 recognition again
-		//
-		// S-RX, 		Received CDDECT so message detected, RX cycle started.
-		//	- Upon RXDONE (int0) package read. If read ok continue,
-		//	- upon RXTOUT (int1) goto S_SCAN
-		//
-		// S-RXDONE Buffer reading is complete
-		//	- Wait for reading in loop()
-		//	- Upon message send to server goto S_SCAN
-		//
-		// S-TX			Transmitting a message
-		//	- Upon TX goto S_SCAN
-		//
-		// S-TXDONE		Transmission complete by loop() now again in interrupt
-		//	- Set the Mask
-		//	- reset the Flags
-		//	- Goto either SCAN or RX
-		//
-		// This interrupt routine has been kept as simple and short as possible.
-		// If we receive an interrupt that does not below to a _state then print error.
-		//
-		// NOTE: We may clear the interrupt but leave the flag for the moment.
-		//	The eventHandler should take care of repairing flags between interrupts.
-		// ----------------------------------------------------------------------------
-
-		void stateMachine()
-		{
-			// Make a sort of mutex by using a volatile variable
-			#if MUTEX_INT==1
-			if(!GetMutex(&inIntr)) {
-				#if DUSB>=1
-				if (debug>=0) {
-					Serial.println(F("eInt:: Mutex"));
-					if (debug>=2) Serial.flush();
-				}
-				#endif
-				return;
+			if (debug>=1) {
+				Serial.println(F("CAD:: Unknown interrupt"));
 			}
 			#endif
-			// Determine what interrupt flags are set
-			uint8_t flags = readRegister(REG_IRQ_FLAGS);
-			uint8_t mask  = readRegister(REG_IRQ_FLAGS_MASK);
-			uint8_t intr  = flags & ( ~ mask );				// Only react on non masked interrupts
-			uint8_t rssi;
+			_state = S_SCAN;
+			cadScanner();
+			writeRegister(REG_IRQ_FLAGS, (uint8_t) 0xFF);			// Reset all interrupts
+		}
+		break; //S_CAD
 
-			if (intr == 0x00) {
-				#if DUSB>=1
-				// Something strange has happened: There has been an event
-				// and we do not have a value for interrupt.
-				if (debug>=1) Serial.println(F("stateMachine:: NO intr"));
-				#endif
 
-				// Mayby wait a little before resetting all/
-				#if MUTEX_INT==1
-				ReleaseMutex(&inIntr);
-				#endif
-				//_state = S_SCAN;
-				writeRegister(REG_IRQ_FLAGS, 0xFF );		// Clear ALL interrupts
-				_event = 0;
-				return;
-			}
+		// --------------------------------------------------------------
+		// If we receive an interrupt on dio0 state==S_RX
+		// it should be a RxDone interrupt
+		// So we should handle the received message
+		case S_RX:
 
-			// Small state machine inside the interrupt handler
-			// as next actions are depending on the state we are in.
-			switch (_state)
-			{
+		if (intr & IRQ_LORA_RXDONE_MASK) {
 
-				// --------------------------------------------------------------
-				// If the state is init, we are starting up.
-				// The initLoraModem() function is already called ini setup();
-				case S_INIT:
+			// We have to check for CRC error which will be visible AFTER RXDONE is set.
+			// CRC errors might indicate tha the reception is not OK.
+			// Could be CRC error or message too large.
+			// CRC error checking requires DIO3
+			if (intr & IRQ_LORA_CRCERR_MASK) {
 				#if DUSB>=2
-				if (debug >= 1) {
-					Serial.println(F("S_INIT"));
-				}
-				#endif
-				// new state, needed to startup the radio (to S_SCAN)
-				writeRegister(REG_IRQ_FLAGS, 0xFF );		// Clear ALL interrupts
-				break;
-
-
-				// --------------------------------------------------------------
-				// In S_SCAN we measure a high RSSI this means that there (probably) is a message
-				// coming in at that freq. But not necessarily on the current SF.
-				// If so find the right SF with CDDETD.
-				case S_SCAN:
-				//
-				// Intr=IRQ_LORA_CDDETD_MASK
-				// We detected a message on this frequency and SF when scanning
-				// We clear both CDDETD and CDDONE and swich to reading state
-				//
-				if (intr & IRQ_LORA_CDDETD_MASK) {
-					#if DUSB>=2
-					if (debug >=3) {
-						Serial.println(F("SCAN:: CADDETD, "));
-					}
-					#endif
-
-					_state = S_RX;								// Set state to receiving
-					opmode(OPMODE_RX_SINGLE);					// set reg 0x01 to 0x06
-
-					// Set RXDONE interrupt to dio0, RXTOUT to dio1
-					writeRegister(REG_DIO_MAPPING_1, (MAP_DIO0_LORA_RXDONE | MAP_DIO1_LORA_RXTOUT));
-
-					// Since new state is S_RX, accept no interrupts except RXDONE or RXTOUT
-					writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) ~(IRQ_LORA_RXDONE_MASK | IRQ_LORA_RXTOUT_MASK));
-
-					delayMicroseconds( RSSI_WAIT_DOWN );		// Wait some microseconds less
-					// Starting with version 5.0.1 the waittime is dependent on the SF
-					// So for SF12 we wait longer (2^7 == 128 uSec) and for SF7 4 uSec.
-					//delayMicroseconds( (0x01 << ((uint8_t)sf - 5 )) );
-					rssi = readRegister(REG_RSSI);				// Read the RSSI
-					_rssi = rssi;								// Read the RSSI in the state variable
-
-					writeRegister(REG_IRQ_FLAGS, 0xFF );		// reset all interrupt flags
-				}//if
-
-				// CDDONE
-				// We received a CDDONE int telling us that we received a message on this
-				// frequency and possibly on one of its SF.
-				// If so, we switch to CAD state where we will only listen to CDDETD event.
-				//
-				else if (intr & IRQ_LORA_CDDONE_MASK) {
-
-					opmode(OPMODE_CAD);
-
-					rssi = readRegister(REG_RSSI);				// Read the RSSI
-
-					// We choose the generic RSSI as a sorting mechanism for packages/messages
-					// The pRSSI (package RSSI) is caluclated upon successful reception of message
-					// So we expect tht this value makes little sense for the moment with CDDONE.
-					// Set the rssi as low as the noise floor. Lower values are not recognized then.
-					//
-					if ( rssi > RSSI_LIMIT ) {					// Is set to 37 (27/08/2017)
-						_state = S_CAD;							// XXX invoke the interrupt handler again?
-					}
-
-					// Clear the CADDONE flag
-					//writeRegister(REG_IRQ_FLAGS, IRQ_LORA_CDDONE_MASK);
-					writeRegister(REG_IRQ_FLAGS, 0xFF);
-				}
-
-				// If not CDDETC and not CDDONE and sf==12 we have to hop
-				else if ((_hop) && (sf==12)) {
-					hop();
-					sf=(sf_t)7;
-				}
-
-				// If we do not switch to S_CAD, we have to hop
-				// Instead of waiting for an interrupt we do this on timer basis (more regular).
-				else {
-					_state=S_SCAN;
-					cadScanner();
-					writeRegister(REG_IRQ_FLAGS, 0xFF);
-				}
-				// else keep on scanning
-				break; // S_SCAN
-
-
-				// --------------------------------------------------------------
-				// S_CAD: In CAD mode we scan every SF for high RSSI until we have a DETECT.
-				// Reason is the we received a CADDONE interrupt so we know a message is received
-				// on the frequency but may be on another SF.
-				//
-				// If message is of the right frequency and SF, IRQ_LORA_CDDETD_MSAK interrupt
-				// is raised, indicating that we can start beging reading the message from SPI.
-				//
-				// DIO0 interrupt IRQ_LORA_CDDONE_MASK in state S_CAD==2 means that we might have
-				// a lock on the Freq but not the right SF. So we increase the SF
-				//
-				case S_CAD:
-
-				// Intr=IRQ_LORA_CDDETD_MASK
-				// We have to set the sf based on a strong RSSI for this channel
-				//
-				if (intr & IRQ_LORA_CDDETD_MASK) {
-
-					_state = S_RX;								// Set state to start receiving
-					opmode(OPMODE_RX_SINGLE);					// set reg 0x01 to 0x06, initiate READ
-
-					// Set RXDONE interrupt to dio0, RXTOUT to dio1
-					writeRegister(REG_DIO_MAPPING_1, (MAP_DIO0_LORA_RXDONE | MAP_DIO1_LORA_RXTOUT));
-
-					// Accept no interrupts except RXDONE or RXTOUT
-					writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) ~(IRQ_LORA_RXDONE_MASK | IRQ_LORA_RXTOUT_MASK));
-
-					delayMicroseconds( RSSI_WAIT_DOWN );		// Wait some microseconds less
-					//delayMicroseconds( (0x01 << ((uint8_t)sf - 5 )) );
-					rssi = readRegister(REG_RSSI);				// Read the RSSI
-					_rssi = rssi;								// Read the RSSI in the state variable
-
-					//writeRegister(REG_IRQ_FLAGS, IRQ_LORA_CDDETD_MASK | IRQ_LORA_RXDONE_MASK);
-					writeRegister(REG_IRQ_FLAGS, 0xFF );		// reset all CAD Detect interrupt flags
-				}// CDDETD
-
-				// Intr == CADDONE
-				// So we scan this SF and if not high enough ... next
-				//
-				else if (intr & IRQ_LORA_CDDONE_MASK) {
-					// If this is not SF12, increment the SF and try again
-					// We expect on other SF get CDDETD
-					//
-					if (((uint8_t)sf) < SF12) {
-						sf = (sf_t)((uint8_t)sf+1);				// XXX This would mean SF7 never used
-						setRate(sf, 0x04);						// Set SF with CRC==on
-
-						opmode(OPMODE_CAD);						// Scanning mode
-
-						delayMicroseconds(RSSI_WAIT );
-						rssi = readRegister(REG_RSSI);			// Read the RSSI
-
-						// reset interrupt flags for CAD Done
-						writeRegister(REG_IRQ_FLAGS, IRQ_LORA_CDDONE_MASK | IRQ_LORA_CDDETD_MASK);
-						//writeRegister(REG_IRQ_FLAGS, 0xFF );	// XXX this will prevent the CDDETD from being read
-
-					}
-					// If we reach SF12, we should go back to SCAN state
-					else {
-						if (_hop) { hop(); }					// if HOP we start at the next frequency
-						_state = S_SCAN;
-						cadScanner();							// Which will reset SF to SF7
-						// Reset the interrupts
-						writeRegister(REG_IRQ_FLAGS, IRQ_LORA_CDDONE_MASK);
-					}
-				} //CADDONE
-
-				//
-				// if this interrupt is not CDECT or CDDONE then the interrupt is
-				// is unknown in this state. So we clear interrupt and give a warning.
-				else {
-					#if DUSB>=2
-					if (debug>=1) {
-						Serial.println(F("CAD:: Unknown interrupt"));
-					}
-					#endif
-					_state = S_SCAN;
-					cadScanner();
-					writeRegister(REG_IRQ_FLAGS, (uint8_t) 0xFF);			// Reset all interrupts
-				}
-				break; //S_CAD
-
-
-				// --------------------------------------------------------------
-				// If we receive an interrupt on dio0 state==S_RX
-				// it should be a RxDone interrupt
-				// So we should handle the received message
-				case S_RX:
-
-				if (intr & IRQ_LORA_RXDONE_MASK) {
-
-					// We have to check for CRC error which will be visible AFTER RXDONE is set.
-					// CRC errors might indicate tha the reception is not OK.
-					// Could be CRC error or message too large.
-					// CRC error checking requires DIO3
-					if (intr & IRQ_LORA_CRCERR_MASK) {
-						#if DUSB>=2
-						Serial.println(F("CRC err"));
-						if (debug>=2) Serial.flush();
-						#endif
-						if (_cad) {
-							_state = S_SCAN;
-							cadScanner();
-						}
-						else {
-							_state = S_RX;
-							rxLoraModem();
-						}
-
-						writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) 0x00);	// Reset the interrupt mask
-						// Reset interrupts
-						writeRegister(REG_IRQ_FLAGS, (uint8_t)(IRQ_LORA_CRCERR_MASK | IRQ_LORA_RXDONE_MASK | IRQ_LORA_RXTOUT_MASK));
-						break;
-					}
-
-					if((LoraUp.payLength = receivePkt(LoraUp.payLoad)) <= 0) {
-						#if DUSB>=1
-						if (debug>=0) {
-							Serial.println(F("sMachine:: Error S-RX"));
-						}
-						#endif
-					}
-
-					// Do all register processing in this section (interrupt)
-					uint8_t value = readRegister(REG_PKT_SNR_VALUE);	// 0x19;
-					if( value & 0x80 ) {								// The SNR sign bit is 1
-
-						value = ( ( ~value + 1 ) & 0xFF ) >> 2;			// Invert and divide by 4
-						LoraUp.snr = -value;
-					}
-					else {
-						// Divide by 4
-						LoraUp.snr = ( value & 0xFF ) >> 2;
-					}
-
-					LoraUp.prssi = readRegister(REG_PKT_RSSI);			// read register 0x1A, packet rssi
-
-					// Correction of RSSI value based on chip used.
-					if (sx1272) {										// Is it a sx1272 radio?
-						LoraUp.rssicorr = 139;
-					} else {											// Probably SX1276 or RFM95
-						LoraUp.rssicorr = 157;
-					}
-
-					LoraUp.sf = readRegister(REG_MODEM_CONFIG2) >> 4;
-
-					if (receivePacket() <= 0) {							// read is not successful
-						#if DUSB>=1
-						Serial.println(F("sMach:: Error receivePacket"));
-						#endif
-					}
-					#if DUSB>=2
-					else if (debug>=2) {
-						Serial.println(F("sMach:: receivePacket OK"));
-					}
-					#endif
-
-					// Set the modem to receiving BEFORE going back to
-					// user space.
-					if (_cad) {
-						_state = S_SCAN;
-						cadScanner();
-					}
-					else {
-						_state = S_RX;
-						rxLoraModem();
-					}
-
-					writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) 0x00);
-					writeRegister(REG_IRQ_FLAGS, 0xFF);			// Reset the interrupt mask
-				}
-
-				// Receive message timeout
-				else if (intr & IRQ_LORA_RXTOUT_MASK) {
-
-					// Set the modem for next receive action. This must be done before
-					// scanning takes place as we cannot do it once RXDETTD is set.
-
-					if (_cad) {
-						// Set the state to CAD scanning
-						_state = S_SCAN;
-						cadScanner();							// Start the scanner after RXTOUT
-					}
-					else {
-						_state = S_RX;							// XXX 170828, why?
-						rxLoraModem();
-					}
-					writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) 0x00 );
-					writeRegister(REG_IRQ_FLAGS, (uint8_t) 0xFF);			// reset all interrupts
-				}
-
-				// The interrupt received is not RXDONE nor RXTOUT
-				// therefore we restart the scanning sequence (catch all)
-				else {
-					#if DUSB>=2
-					if (debug >=3) {
-						Serial.println(F("S_RX:: No RXDONE/RXTOUT, "));
-					}
-					#endif
-					initLoraModem();							// Reset all communication,3
-					if (_cad) {
-						_state = S_SCAN;
-						cadScanner();
-					}
-					else {
-						_state = S_RX;
-						rxLoraModem();
-					}
-					writeRegister(REG_IRQ_FLAGS_MASK, 0x00);	// Reset all masks
-					writeRegister(REG_IRQ_FLAGS, 0xFF);			// Reset all interrupts
-				}
-				break; // S_RX
-
-
-				// --------------------------------------------------------------
-
-				//
-				case S_TX:
-
-				// Initiate the transmission of the buffer (in Interrupt space)
-				// We react on ALL interrupts if we are in TX state.
-
-				txLoraModem(
-					LoraDown.payLoad,
-					LoraDown.payLength,
-					LoraDown.tmst,
-					LoraDown.sfTx,
-					LoraDown.powe,
-					LoraDown.fff,
-					LoraDown.crc,
-					LoraDown.iiq
-				);
-
-				#if DUSB>=2
-				if (debug>=0) {
-					Serial.println(F("S_TX, "));
-				}
-				#endif
-				_state = S_TXDONE;
-				writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) 0x00);
-				writeRegister(REG_IRQ_FLAGS, (uint8_t) 0xFF);				// reset interrupt flags
-
-				break; // S_TX
-
-				// ---------------------------------------------------
-				// AFter the transmission is completed by the hardware,
-				// the interrupt TXDONE is raised telling us that the tranmission
-				// was successful.
-				// If we receive an interrupt on dio0 _state==S_TX it is a TxDone interrupt
-				// Do nothing with the interrupt, it is just an indication.
-				// sendPacket switch back to scanner mode after transmission finished OK
-				case S_TXDONE:
-				if (intr & IRQ_LORA_TXDONE_MASK) {
-					#if DUSB>=1
-					Serial.println(F("TXDONE interrupt"));
-					#endif
-					// After transmission reset to receiver
-					if (_cad) {
-						// Set the state to CAD scanning
-						_state = S_SCAN;
-						cadScanner();								// Start the scanner after TX cycle
-					}
-					else {
-						_state = S_RX;
-						rxLoraModem();
-					}
-
-					writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) 0x00);
-					writeRegister(REG_IRQ_FLAGS, (uint8_t) 0xFF);				// reset interrupt flags
-					#if DUSB>=1
-					if (debug>=1) {
-						Serial.println(F("TXDONE handled"));
-						if (debug>=2) Serial.flush();
-					}
-					#endif
-				}
-				else {
-					#if DUSB>=1
-					if (debug>=0) {
-						Serial.println(F("TXDONE unknown interrupt"));
-						if (debug>=2) Serial.flush();
-					}
-					#endif
-				}
-				break; // S_TXDONE
-
-
-				// --------------------------------------------------------------
-				// If _STATE is in undefined state
-				// If such a thing happens, we should re-init the interface and
-				// make sure that we pick up next interrupt
-				default:
-				#if DUSB>=2
-				if (debug >= 2) {
-					Serial.print("E state=");
-					Serial.println(_state);
-				}
+				Serial.println(F("CRC err"));
+				if (debug>=2) Serial.flush();
 				#endif
 				if (_cad) {
 					_state = S_SCAN;
 					cadScanner();
 				}
-				else
-				{
+				else {
 					_state = S_RX;
 					rxLoraModem();
 				}
-				writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) 0x00);
-				writeRegister(REG_IRQ_FLAGS, (uint8_t) 0xFF);				// Reset all interrupts
+
+				writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) 0x00);	// Reset the interrupt mask
+				// Reset interrupts
+				writeRegister(REG_IRQ_FLAGS, (uint8_t)(IRQ_LORA_CRCERR_MASK | IRQ_LORA_RXDONE_MASK | IRQ_LORA_RXTOUT_MASK));
 				break;
 			}
 
-			#if MUTEX_INT==1
-			ReleaseMutex(&inIntr);
+			if((LoraUp.payLength = receivePkt(LoraUp.payLoad)) <= 0) {
+				#if DUSB>=1
+				if (debug>=0) {
+					Serial.println(F("sMachine:: Error S-RX"));
+				}
+				#endif
+			}
+
+			// Do all register processing in this section (interrupt)
+			uint8_t value = readRegister(REG_PKT_SNR_VALUE);	// 0x19;
+			if( value & 0x80 ) {								// The SNR sign bit is 1
+
+				value = ( ( ~value + 1 ) & 0xFF ) >> 2;			// Invert and divide by 4
+				LoraUp.snr = -value;
+			}
+			else {
+				// Divide by 4
+				LoraUp.snr = ( value & 0xFF ) >> 2;
+			}
+
+			LoraUp.prssi = readRegister(REG_PKT_RSSI);			// read register 0x1A, packet rssi
+
+			// Correction of RSSI value based on chip used.
+			if (sx1272) {										// Is it a sx1272 radio?
+				LoraUp.rssicorr = 139;
+			} else {											// Probably SX1276 or RFM95
+				LoraUp.rssicorr = 157;
+			}
+
+			LoraUp.sf = readRegister(REG_MODEM_CONFIG2) >> 4;
+
+			if (receivePacket() <= 0) {							// read is not successful
+				#if DUSB>=1
+				Serial.println(F("sMach:: Error receivePacket"));
+				#endif
+			}
+			#if DUSB>=2
+			else if (debug>=2) {
+				Serial.println(F("sMach:: receivePacket OK"));
+			}
 			#endif
-			_event = 0;
-			return;
+
+			// Set the modem to receiving BEFORE going back to
+			// user space.
+			if (_cad) {
+				_state = S_SCAN;
+				cadScanner();
+			}
+			else {
+				_state = S_RX;
+				rxLoraModem();
+			}
+
+			writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) 0x00);
+			writeRegister(REG_IRQ_FLAGS, 0xFF);			// Reset the interrupt mask
 		}
 
+		// Receive message timeout
+		else if (intr & IRQ_LORA_RXTOUT_MASK) {
 
-		// ----------------------------------------------------------------------------
-		// Interrupt_0 Handler.
-		// Both interrupts DIO0 and DIO1 are mapped on GPIO15. Se we have to look at
-		// the interrupt flags to see which interrupt(s) are called.
+			// Set the modem for next receive action. This must be done before
+			// scanning takes place as we cannot do it once RXDETTD is set.
+
+			if (_cad) {
+				// Set the state to CAD scanning
+				_state = S_SCAN;
+				cadScanner();							// Start the scanner after RXTOUT
+			}
+			else {
+				_state = S_RX;							// XXX 170828, why?
+				rxLoraModem();
+			}
+			writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) 0x00 );
+			writeRegister(REG_IRQ_FLAGS, (uint8_t) 0xFF);			// reset all interrupts
+		}
+
+		// The interrupt received is not RXDONE nor RXTOUT
+		// therefore we restart the scanning sequence (catch all)
+		else {
+			#if DUSB>=2
+			if (debug >=3) {
+				Serial.println(F("S_RX:: No RXDONE/RXTOUT, "));
+			}
+			#endif
+			initLoraModem();							// Reset all communication,3
+			if (_cad) {
+				_state = S_SCAN;
+				cadScanner();
+			}
+			else {
+				_state = S_RX;
+				rxLoraModem();
+			}
+			writeRegister(REG_IRQ_FLAGS_MASK, 0x00);	// Reset all masks
+			writeRegister(REG_IRQ_FLAGS, 0xFF);			// Reset all interrupts
+		}
+		break; // S_RX
+
+
+		// --------------------------------------------------------------
+
 		//
-		// NOTE:: This method may work not as good as just using more GPIO pins on
-		//  the ESP8266 mcu. But in practice it works good enough
-		// ----------------------------------------------------------------------------
-		void ICACHE_RAM_ATTR Interrupt_0()
-		{
-			_event = 1;
+		case S_TX:
+
+		// Initiate the transmission of the buffer (in Interrupt space)
+		// We react on ALL interrupts if we are in TX state.
+
+		txLoraModem(
+			LoraDown.payLoad,
+			LoraDown.payLength,
+			LoraDown.tmst,
+			LoraDown.sfTx,
+			LoraDown.powe,
+			LoraDown.fff,
+			LoraDown.crc,
+			LoraDown.iiq
+		);
+
+		#if DUSB>=2
+		if (debug>=0) {
+			Serial.println(F("S_TX, "));
 		}
+		#endif
+		_state = S_TXDONE;
+		writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) 0x00);
+		writeRegister(REG_IRQ_FLAGS, (uint8_t) 0xFF);				// reset interrupt flags
+
+		break; // S_TX
+
+		// ---------------------------------------------------
+		// AFter the transmission is completed by the hardware,
+		// the interrupt TXDONE is raised telling us that the tranmission
+		// was successful.
+		// If we receive an interrupt on dio0 _state==S_TX it is a TxDone interrupt
+		// Do nothing with the interrupt, it is just an indication.
+		// sendPacket switch back to scanner mode after transmission finished OK
+		case S_TXDONE:
+		if (intr & IRQ_LORA_TXDONE_MASK) {
+			#if DUSB>=1
+			Serial.println(F("TXDONE interrupt"));
+			#endif
+			// After transmission reset to receiver
+			if (_cad) {
+				// Set the state to CAD scanning
+				_state = S_SCAN;
+				cadScanner();								// Start the scanner after TX cycle
+			}
+			else {
+				_state = S_RX;
+				rxLoraModem();
+			}
+
+			writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) 0x00);
+			writeRegister(REG_IRQ_FLAGS, (uint8_t) 0xFF);				// reset interrupt flags
+			#if DUSB>=1
+			if (debug>=1) {
+				Serial.println(F("TXDONE handled"));
+				if (debug>=2) Serial.flush();
+			}
+			#endif
+		}
+		else {
+			#if DUSB>=1
+			if (debug>=0) {
+				Serial.println(F("TXDONE unknown interrupt"));
+				if (debug>=2) Serial.flush();
+			}
+			#endif
+		}
+		break; // S_TXDONE
 
 
-		// ----------------------------------------------------------------------------
-		// Interrupt handler for DIO1 having High Value
-		// As DIO0 and DIO1 may be multiplexed on one GPIO interrupt handler
-		// (as we do) we have to be careful only to call the right Interrupt_x
-		// handler and clear the corresponding interrupts for that dio.
-		// NOTE: Make sure all Serial communication is only for debug level 3 and up.
-		// Handler for:
-		//		- CDDETD
-		//		- RXTIMEOUT
-		//		- (RXDONE error only)
-		// ----------------------------------------------------------------------------
-		void ICACHE_RAM_ATTR Interrupt_1()
-		{
-			_event = 1;
+		// --------------------------------------------------------------
+		// If _STATE is in undefined state
+		// If such a thing happens, we should re-init the interface and
+		// make sure that we pick up next interrupt
+		default:
+		#if DUSB>=2
+		if (debug >= 2) {
+			Serial.print("E state=");
+			Serial.println(_state);
 		}
+		#endif
+		if (_cad) {
+			_state = S_SCAN;
+			cadScanner();
+		}
+		else
+		{
+			_state = S_RX;
+			rxLoraModem();
+		}
+		writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) 0x00);
+		writeRegister(REG_IRQ_FLAGS, (uint8_t) 0xFF);				// Reset all interrupts
+		break;
+	}
 
-		// ----------------------------------------------------------------------------
-		// Frequency Hopping Channel (FHSS) dio2
-		// ----------------------------------------------------------------------------
-		void ICACHE_RAM_ATTR Interrupt_2()
-		{
-			_event = 1;
-		}
+	#if MUTEX_INT==1
+	ReleaseMutex(&inIntr);
+	#endif
+	_event = 0;
+	return;
+}
+
+
+// ----------------------------------------------------------------------------
+// Interrupt_0 Handler.
+// Both interrupts DIO0 and DIO1 are mapped on GPIO15. Se we have to look at
+// the interrupt flags to see which interrupt(s) are called.
+//
+// NOTE:: This method may work not as good as just using more GPIO pins on
+//  the ESP8266 mcu. But in practice it works good enough
+// ----------------------------------------------------------------------------
+void ICACHE_RAM_ATTR Interrupt_0()
+{
+	_event = 1;
+}
+
+
+// ----------------------------------------------------------------------------
+// Interrupt handler for DIO1 having High Value
+// As DIO0 and DIO1 may be multiplexed on one GPIO interrupt handler
+// (as we do) we have to be careful only to call the right Interrupt_x
+// handler and clear the corresponding interrupts for that dio.
+// NOTE: Make sure all Serial communication is only for debug level 3 and up.
+// Handler for:
+//		- CDDETD
+//		- RXTIMEOUT
+//		- (RXDONE error only)
+// ----------------------------------------------------------------------------
+void ICACHE_RAM_ATTR Interrupt_1()
+{
+	_event = 1;
+}
+
+// ----------------------------------------------------------------------------
+// Frequency Hopping Channel (FHSS) dio2
+// ----------------------------------------------------------------------------
+void ICACHE_RAM_ATTR Interrupt_2()
+{
+	_event = 1;
+}
