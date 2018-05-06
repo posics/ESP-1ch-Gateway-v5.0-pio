@@ -2,7 +2,6 @@
 #define TXRX_H
 
 #include <Arduino.h>
-#include <ArduinoJson.h>
 #include <gBase64.h>							// https://github.com/adamvr/arduino-base64 (changed the name)
 
 #ifdef __cplusplus

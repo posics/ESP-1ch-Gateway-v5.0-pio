@@ -19,9 +19,11 @@
 
 #include <txRx.h>
 #include <loraModem.h>
-#include <ESP-sc-gway.h>
+#include <gwayGlobals.h>
 #include <sys/time.h>
 #include <TimeLib.h>							// http://playground.arduino.cc/code/time
+#include <ArduinoJson.h>
+
 
 // ----------------------------------------------------------------------------
 // DOWN DOWN DOWN DOWN DOWN DOWN DOWN DOWN DOWN DOWN DOWN DOWN DOWN DOWN DOWN

@@ -1,9 +1,6 @@
 #ifndef ESP_SC_GWAY_H
 #define ESP_SC_GWAY_H
 
-#include <Arduino.h>
-#include <loraModem.h>
-
 // For Heltec ESP32 based WIFI_LoRa_32 boards (and may-be others as well)
 // REMOVE for ESP8266 builds
 #define ESP32BUILD  1
@@ -195,8 +192,6 @@
 #define OLED_SCL 22							// GPIO5 / D1
 #define OLED_SDA 21							// GPIO4 / D2
 #define OLED_ADDR 0x3C						// Default 0x3C for 0.9", for 1.3" it is 0x78
-
-
 
 // Wifi definitions
 // WPA is an array with SSID and password records. Set WPA size to number of entries in array

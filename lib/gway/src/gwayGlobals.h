@@ -1,6 +1,9 @@
 #ifndef GWAY_GLOBALS_H
 #define GWAY_GLOBALS_H
 
+#include <Arduino.h>
+#include <loraModem.h>
+
 extern int debug;
 
 extern bool sx1272;
@@ -54,11 +57,6 @@ extern uint32_t ntptimer;
 extern SSD1306  display;
 #endif
 
-// Please fill in at least ONE SSID and password from your own WiFI network
-// below. This is needed to get the gateway working
-// Note: DO NOT use the first and the last line of the stucture, these should be empty strings and
-//	the first line in te struct is reserved for WifiManager.
-//
 extern wpas wpa[3];
 
 #endif //GWAY_GLOBALS_H

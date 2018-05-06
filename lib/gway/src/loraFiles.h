@@ -1,16 +1,10 @@
 #ifndef LORA_FILES_H
 #define LORA_FILES_H
 
-#include <ESP-sc-gway.h>
 #include <loraModem.h>
 
 #ifdef ESP32BUILD
-#include "esp_wifi.h"
-#include "WiFi.h"
 #include <SPIFFS.h>
-#else
-#include <ESP8266WiFi.h>
-#include <DNSServer.h> 							// Local DNSserver
 #endif
 #include <FS.h>
 
@@ -49,9 +43,6 @@ extern "C" {
 int readConfig(const char *fn, struct espGwayConfig *c);
 int writeGwayCfg(const char *fn, String ssid);
 int writeConfig(const char *fn, struct espGwayConfig *c);
-int sendPacket(uint8_t *buf, uint8_t length);
-int buildPacket(uint32_t tmst, uint8_t *buff_up, struct Loraup LoraUp, bool internal);
-int receivePacket();
 
 #ifdef __cplusplus
 }

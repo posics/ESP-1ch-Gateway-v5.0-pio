@@ -55,6 +55,7 @@
 // ============================================================================
 #include <loraModem.h>
 #include <loraFiles.h>
+#include <txRx.h>
 
 // Our code should correct the server timing
 long txDelay= 0x00;								// delay time on top of server TMST

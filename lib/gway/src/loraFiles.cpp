@@ -1,4 +1,5 @@
 #include <loraFiles.h>
+#include <gwayGlobals.h>
 
 espGwayConfig gwayConfig;
 
