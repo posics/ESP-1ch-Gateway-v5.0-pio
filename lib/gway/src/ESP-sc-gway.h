@@ -48,7 +48,7 @@ extern uint32_t lastTmst;
 // Also this is the initial value of debug parameter.
 // The value can be changed using the admin webserver
 // For operational use, set initial DEBUG vaulue 0
-#define DEBUG 0
+#define DEBUG 1
 
 // Debug message will be put on Serial is this one is set.
 // If set to 0, not USB Serial prints are done
@@ -124,7 +124,7 @@ extern uint32_t ntptimer;
 // NOTE: If your node has only one frequency enabled and one SF, you must set this to 1
 //		in order to receive downlink messages
 // NOTE: In all other cases, value 0 works for most gateways with CAD enabled
-#define _STRICT_1CH	0
+#define _STRICT_1CH	1
 
 // Allows configuration through WifiManager AP setup. Must be 0 or 1
 #ifdef ESP32BUILD
