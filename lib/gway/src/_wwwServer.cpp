@@ -708,21 +708,21 @@ void wifiData()
 	response +=WiFi.SSID(); response+="</tr>";
 
 	response +="<tr><td class=\"cell\">IP Address</td><td class=\"cell\">";
-	printIP((IPAddress)WiFi.localIP(),'.',response);
+	response += WiFi.localIP().toString(); //printIP(WiFi.localIP(),'.',response);
 	response +="</tr>";
 	response +="<tr><td class=\"cell\">IP Gateway</td><td class=\"cell\">";
-	printIP((IPAddress)WiFi.gatewayIP(),'.',response);
+	response += WiFi.gatewayIP().toString(); //printIP(WiFi.gatewayIP(),'.',response);
 	response +="</tr>";
 	response +="<tr><td class=\"cell\">NTP Server</td><td class=\"cell\">"; response+=NTP_TIMESERVER; response+="</tr>";
 	response +="<tr><td class=\"cell\">LoRa Router</td><td class=\"cell\">"; response+=_TTNSERVER; response+="</tr>";
 	response +="<tr><td class=\"cell\">LoRa Router IP</td><td class=\"cell\">";
-	printIP((IPAddress)ttnServer,'.',response);
+	response += ttnServer.toString(); //printIP(ttnServer,'.',response);
 	response +="</tr>";
 	#ifdef _THINGSERVER
 	response +="<tr><td class=\"cell\">LoRa Router 2</td><td class=\"cell\">"; response+=_THINGSERVER;
 	response += String() + ":" + _THINGPORT + "</tr>";
 	response +="<tr><td class=\"cell\">LoRa Router 2 IP</td><td class=\"cell\">";
-	printIP((IPAddress)thingServer,'.',response);
+	response += thingServer.toString(); //printIP((IPAddress)thingServer,'.',response);
 	response +="</tr>";
 	#endif
 	response +="</table>";
@@ -1015,8 +1015,9 @@ void setupWWW()
 	// may take too much time to serve all information before a next
 	// package interrupt arrives at the gateway
 
-	Serial.print(F("WWW Server started on port "));
-	Serial.println(A_SERVERPORT);
+	//Serial.print(F("WWW Server started on port "));
+	//Serial.println(A_SERVERPORT);
+	Serial.printf("WWW Server started at %s on port %i\n", WiFi.localIP().toString().c_str(), A_SERVERPORT);
 	return;
 }
 
