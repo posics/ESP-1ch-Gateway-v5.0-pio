@@ -4,36 +4,6 @@
 #include <Arduino.h>
 #include <loraModem.h>
 
-extern int debug;
-
-extern bool sx1272;
-extern uint32_t cp_nb_rx_rcv;
-extern uint32_t cp_nb_rx_ok;
-extern uint32_t cp_nb_rx_bad;
-extern uint32_t cp_nb_rx_nocrc;
-extern uint32_t cp_up_pkt_fwd;
-
-extern uint8_t MAC_array[6];
-
-extern sf_t sf;
-extern sf_t sfi;
-
-extern float lat;
-extern float lon;
-extern int   alt;
-extern char platform[24];
-extern char email[40];
-extern char description[64];
-
-extern IPAddress ttnServer;
-extern IPAddress thingServer;
-
-//extern WiFiUDP Udp;
-extern uint32_t stattime;
-extern uint32_t pulltime;
-extern uint32_t lastTmst;
-
-
 // For Heltec ESP32 based WIFI_LoRa_32 boards (and may-be others as well)
 // REMOVE for ESP8266 builds
 #define ESP32BUILD  1
@@ -76,24 +46,18 @@ extern uint32_t lastTmst;
 #define A_REFRESH 1				// Will the webserver refresh or not?
 #define A_SERVERPORT 80			// local webserver port
 #define A_MAXBUFSIZE 192		// Must be larger than 128, but small enough to work
+
 #if A_SERVER==1
 	#ifdef ESP32BUILD
 		#include <WiFiClient.h>
 		#include <WebServer.h>
 		#include <ESPmDNS.h>
-		extern WebServer server;
 	#else
 		#include <Streaming.h>          				// http://arduiniana.org/libraries/streaming/
-		  extern ESP8266WebServer server;
 	#endif
 #endif
 
-#if A_SERVER==1
-extern uint32_t wwwtime;
-#endif
-#if NTP_INTR==0
-extern uint32_t ntptimer;
-#endif
+
 // Definitions for over the air updates. At the moment we support OTA with IDE
 // Make sure that tou have installed Python version 2.7 and have Bonjour in your network.
 // Bonjour is included in iTunes (which is free) and OTA is recommended to install
@@ -106,12 +70,6 @@ extern uint32_t ntptimer;
 #else
 #define A_OTA 0
 #endif
-
-
-
-
-
-
 
 // Single channel gateways if they behave strict should only use one frequency
 // channel and one spreading factor. However, the TTN backend replies on RX2
@@ -162,7 +120,7 @@ extern uint32_t ntptimer;
 #define MUTEX_SPI 0
 #define MUTEX_SPO 0
 // Protect the interrupt module
-#define MUTEX_INT 0
+#define MUTEX_INT 1
 
 // Define whether we want to manage the gateway over UDP (next to management
 // thru webinterface).
@@ -238,10 +196,7 @@ extern uint32_t ntptimer;
 #define OLED_SDA 21							// GPIO4 / D2
 #define OLED_ADDR 0x3C						// Default 0x3C for 0.9", for 1.3" it is 0x78
 
-#if OLED==1
-#include "SSD1306.h"
-extern SSD1306  display;
-#endif
+
 
 // Wifi definitions
 // WPA is an array with SSID and password records. Set WPA size to number of entries in array
@@ -253,13 +208,6 @@ struct wpas {
 	char login[32];							// Maximum Buffer Size (and allocated memory)
 	char passw[64];
 };
-
-// Please fill in at least ONE SSID and password from your own WiFI network
-// below. This is needed to get the gateway working
-// Note: DO NOT use the first and the last line of the stucture, these should be empty strings and
-//	the first line in te struct is reserved for WifiManager.
-//
-extern wpas wpa[3];
 
 // For asserting and testing the following defines are used.
 //
@@ -274,6 +222,8 @@ extern wpas wpa[3];
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include <gwayGlobals.h>
 
 void die(const char *s);
 void gway_failed(const char *file, uint16_t line);
